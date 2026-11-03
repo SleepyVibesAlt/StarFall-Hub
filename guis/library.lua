@@ -1158,6 +1158,131 @@ function SmoothUI.new()
 	return self
 end
 
+local Library = SmoothUI.new()
 
+local Window = Library:CreateWindow({
+    Title = "StarFall Hub v1.0"
+})
+
+-- ============ MAIN TAB ============
+local MainTab = Window:CreateTab("Main")
+
+local General = MainTab:CreateSection("General")
+General:CreateButton({
+    Name = "Rejoin",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+})
+
+General:CreateButton({
+    Name = "Copy Discord",
+    Callback = function()
+        setclipboard("https://discord.gg/yourserver")
+        Library:Notify("Copied!", "Discord link in clipboard", 2)
+    end
+})
+
+local Player = MainTab:CreateSection("Player")
+local WS = Player:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    CurrentValue = 16,
+    Callback = function(v)
+        local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end
+})
+
+local JP = Player:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 300},
+    CurrentValue = 50,
+    Callback = function(v)
+        local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.JumpPower = v end
+    end
+})
+
+Player:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        game.Players.LocalPlayer:LoadCharacter()
+    end
+})
+
+local Noclip = Player:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(v) _G.Noclip = v end
+})
+
+-- ============ COMBAT TAB ============
+local CombatTab = Window:CreateTab("Combat")
+
+local Aimbot = CombatTab:CreateSection("Aimbot")
+Aimbot:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Aimbot = v end})
+Aimbot:CreateToggle({Name = "Team Check", CurrentValue = true, Callback = function(v) _G.TeamCheck = v end})
+Aimbot:CreateToggle({Name = "Wall Check", CurrentValue = true, Callback = function(v) _G.WallCheck = v end})
+
+-- Dropdown example for target part selection
+Aimbot:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "Torso", "HumanoidRootPart", "Random"},
+    CurrentOption = "Head",
+    Callback = function(part) _G.AimbotPart = part end
+})
+
+Aimbot:CreateSlider({Name = "FOV", Range = {10, 360}, CurrentValue = 90, Callback = function(v) _G.FOV = v end})
+Aimbot:CreateSlider({Name = "Smoothness", Range = {1, 20}, CurrentValue = 5, Callback = function(v) _G.Smooth = v end})
+
+local Trigger = CombatTab:CreateSection("Triggerbot")
+Trigger:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Trigger = v end})
+Trigger:CreateSlider({Name = "Delay (ms)", Range = {0, 500}, CurrentValue = 50, Callback = function(v) _G.TriggerDelay = v end})
+
+-- ============ VISUALS TAB ============
+local VisualsTab = Window:CreateTab("Visuals")
+
+local ESP = VisualsTab:CreateSection("ESP")
+ESP:CreateToggle({Name = "Box", CurrentValue = false, Callback = function(v) _G.BoxESP = v end})
+ESP:CreateToggle({Name = "Names", CurrentValue = false, Callback = function(v) _G.NameESP = v end})
+ESP:CreateToggle({Name = "Health", CurrentValue = false, Callback = function(v) _G.HealthESP = v end})
+ESP:CreateToggle({Name = "Distance", CurrentValue = false, Callback = function(v) _G.DistESP = v end})
+ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 1000, Callback = function(v) _G.MaxDist = v end})
+
+-- ============ SETTINGS TAB ============
+-- Add Save API (automatically creates Settings tab with full config management)
+Window:AddSaveApi({
+    Folder = "StarFallHub",
+    DefaultConfig = "default",
+    AutoLoad = true
+})
+
+-- Optional: Add unload button to the created Settings tab
+local SettingsTab = nil
+for _, tab in pairs(Window.Tabs) do
+    if tab.Button and tab.Button.Text == "Settings" then
+        SettingsTab = tab
+        break
+    end
+end
+if SettingsTab then
+    local MiscSection = SettingsTab:CreateSection("Miscellaneous")
+    MiscSection:CreateButton({
+        Name = "Unload UI",
+        Callback = function() Window:Destroy() end
+    })
+end
+
+-- ============ STARTUP ============
+Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
+
+-- Auto-collapse sections after 10 seconds
+task.delay(10, function()
+    General:SetExpanded(false)
+    Player:SetExpanded(false)
+    Aimbot:SetExpanded(false)
+    ESP:SetExpanded(false)
+end)
 
 return SmoothUI
