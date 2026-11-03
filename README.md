@@ -19,8 +19,6 @@ A lightweight, modern Roblox UI library with smooth animations, collapsible sect
 | **🔔 Toast Notifications** | Auto-dismissing notifications with countdown timers |
 | **🎯 Smooth Animations** | Quart easing on all transitions (toggles, sliders, sections, notifications) |
 | **📦 Zero Dependencies** | Single file, no external requires |
-| **💾 Save/Load System** | Cross-environment config persistence (Executor + Studio) |
-| **📋 Dropdown Selector** | Single/multi-select dropdowns with search |
 
 ---
 
@@ -216,63 +214,6 @@ print(SpeedSlider:Get()) -- 100
 
 ---
 
-### `Section:CreateTextbox(config)`
-Adds a text input field.
-
-```lua
-Section:CreateTextbox({
-    Name = "Player Name",
-    PlaceholderText = "Enter username...",
-    Callback = function(text)
-        print("Searching for:", text)
-    end
-})
-```
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `Name` | string | ✅ | Label above input |
-| `PlaceholderText` | string | ❌ | Placeholder (default: "Enter text...") |
-| `Callback` | function | ✅ | Called with `text` (string) on focus lost |
-
-**Returns:** `TextBox` instance (for advanced use)
-
----
-
-### `Section:CreateDropdown(config)`
-Adds a dropdown selector (single or multi-select).
-
-```lua
-local MyDropdown = Section:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "Torso", "Random"},  -- or {Name="Head", Value="head"}, ...
-    CurrentOption = "Head",                  -- default: first option
-    MultiSelect = false,                     -- optional, default: false
-    Callback = function(selected)
-        print("Selected:", selected)
-    end
-})
-```
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `Name` | string | ✅ | Label above dropdown |
-| `Options` | table | ✅ | Array of strings or `{Name, Value}` tables |
-| `CurrentOption` | any | ❌ | Initial selection (default: first option) |
-| `MultiSelect` | boolean | ❌ | Enable multi-select (default: `false`) |
-| `Callback` | function | ✅ | Called with selected value(s) |
-
-**Returns:** `{ Set = function(val), Get = function() : val, Refresh = function(newOptions) }`
-
-**Programmatic Control:**
-```lua
-MyDropdown:Set("Torso")              -- Set selection
-MyDropdown:Get()                     -- Get current selection
-MyDropdown.Refresh({"New", "Opts"})  -- Update options list
-```
-
----
-
 ### Section Methods
 
 ```lua
@@ -311,39 +252,6 @@ Library:Notify("Error", "Failed to load", 5)
 Window:Toggle()    -- Show/hide window
 Window:Destroy()   -- Clean up & remove UI
 ```
-
----
-
-### `Window:AddSaveApi(config)`
-Adds a complete configuration management system (Save/Load/Delete/Refresh) to a Settings tab.
-
-```lua
-Window:AddSaveApi({
-    Folder = "StarFallHub",        -- folder name (default: "StarFallHub")
-    DefaultConfig = "default",     -- default config name (default: "default")
-    AutoLoad = true                -- auto-refresh config list on init (default: true)
-})
-```
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `Folder` | string | ❌ | Save folder name |
-| `DefaultConfig` | string | ❌ | Default config name |
-| `AutoLoad` | boolean | ❌ | Auto-refresh on startup (default: `true`) |
-
-**Returns:** `{ Refresh = function(), Folder = string }`
-
-**Creates a Settings tab with:**
-- **Config Name** — Textbox to enter/select config name
-- **Saved Configs** — Dropdown listing all saved configs
-- **Save Config** — Saves current `_G` table to JSON
-- **Load Config** — Loads JSON and applies to `_G`
-- **Delete Config** — Removes config file
-- **Refresh List** — Updates the config dropdown
-
-**Cross-Environment Support:**
-- **Executors** (Synapse, Script-Ware, etc.): Uses `writefile`/`readfile`/`listfiles`/`delfile`
-- **Roblox Studio**: Uses in-memory mock file system (no file I/O needed)
 
 ---
 
@@ -417,14 +325,6 @@ Aimbot:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function
 Aimbot:CreateToggle({Name = "Team Check", CurrentValue = true, Callback = function(v) _G.TeamCheck = v end})
 Aimbot:CreateToggle({Name = "Wall Check", CurrentValue = true, Callback = function(v) _G.WallCheck = v end})
 
--- Dropdown example for target part selection
-Aimbot:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "Torso", "HumanoidRootPart", "Random"},
-    CurrentOption = "Head",
-    Callback = function(part) _G.AimbotPart = part end
-})
-
 Aimbot:CreateSlider({Name = "FOV", Range = {10, 360}, CurrentValue = 90, Callback = function(v) _G.FOV = v end})
 Aimbot:CreateSlider({Name = "Smoothness", Range = {1, 20}, CurrentValue = 5, Callback = function(v) _G.Smooth = v end})
 
@@ -441,30 +341,6 @@ ESP:CreateToggle({Name = "Names", CurrentValue = false, Callback = function(v) _
 ESP:CreateToggle({Name = "Health", CurrentValue = false, Callback = function(v) _G.HealthESP = v end})
 ESP:CreateToggle({Name = "Distance", CurrentValue = false, Callback = function(v) _G.DistESP = v end})
 ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 1000, Callback = function(v) _G.MaxDist = v end})
-
--- ============ SETTINGS TAB ============
--- Add Save API (automatically creates Settings tab with full config management)
-Window:AddSaveApi({
-    Folder = "StarFallHub",
-    DefaultConfig = "default",
-    AutoLoad = true
-})
-
--- Optional: Add unload button to the created Settings tab
-local SettingsTab = nil
-for _, tab in pairs(Window.Tabs) do
-    if tab.Button and tab.Button.Text == "Settings" then
-        SettingsTab = tab
-        break
-    end
-end
-if SettingsTab then
-    local MiscSection = SettingsTab:CreateSection("Miscellaneous")
-    MiscSection:CreateButton({
-        Name = "Unload UI",
-        Callback = function() Window:Destroy() end
-    })
-end
 
 -- ============ STARTUP ============
 Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
@@ -520,8 +396,6 @@ local Theme = {
 ---
 
 ## 🛠️ Extending the Library
-
-> **Note:** Dropdown is now built-in! See `Section:CreateDropdown` above.
 
 ### Add a ColorPicker
 ```lua

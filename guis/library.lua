@@ -27,102 +27,10 @@ end
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- ==========================================
--- SAVE SYSTEM - Cross Environment Support
--- ==========================================
-local SaveSystem = {}
-SaveSystem.__index = SaveSystem
-
--- Detect environment
-local isExecutor = (writefile and readfile and listfiles and delfile and isfile) ~= nil
-local isStudio = RunService:IsStudio()
-
--- Mock file system for Studio
-local studioFileSystem = {}
-
-local function getFolder(folderName)
-	folderName = folderName or "StarFallHub"
-	if isExecutor then
-		return folderName
-	else
-		if not studioFileSystem[folderName] then
-			studioFileSystem[folderName] = {}
-		end
-		return studioFileSystem[folderName]
-	end
-end
-
-function SaveSystem.WriteFile(folder, fileName, content)
-	local fullPath = folder .. "/" .. fileName
-	if isExecutor then
-		if not isfolder(folder) then makefolder(folder) end
-		writefile(fullPath, content)
-	else
-		local fs = getFolder(folder)
-		fs[fileName] = content
-	end
-end
-
-function SaveSystem.ReadFile(folder, fileName)
-	local fullPath = folder .. "/" .. fileName
-	if isExecutor then
-		if isfile(fullPath) then
-			return readfile(fullPath)
-		end
-		return nil
-	else
-		local fs = getFolder(folder)
-		return fs[fileName]
-	end
-end
-
-function SaveSystem.ListFiles(folder)
-	if isExecutor then
-		if not isfolder(folder) then return {} end
-		local files = listfiles(folder)
-		local result = {}
-		for _, f in ipairs(files) do
-			local name = f:match("([^/\\]+)$")
-			if name and name:match("%.json$") then
-				table.insert(result, name)
-			end
-		end
-		return result
-	else
-		local fs = getFolder(folder)
-		local result = {}
-		for name, _ in pairs(fs) do
-			if name:match("%.json$") then
-				table.insert(result, name)
-			end
-		end
-		return result
-	end
-end
-
-function SaveSystem.DeleteFile(folder, fileName)
-	local fullPath = folder .. "/" .. fileName
-	if isExecutor then
-		if isfile(fullPath) then delfile(fullPath) end
-	else
-		local fs = getFolder(folder)
-		fs[fileName] = nil
-	end
-end
-
-function SaveSystem.FolderExists(folder)
-	if isExecutor then
-		return isfolder(folder)
-	else
-		return studioFileSystem[folder] ~= nil
-	end
-end
 
 local Theme = {
 	Background = Color3.fromRGB(18, 18, 24),
@@ -272,7 +180,6 @@ function SmoothUI:CreateWindow(config)
 	local Window = {}
 	Window.Tabs = {}
 	Window.Library = self  -- Store reference to Library for notifications
-	Window.ConfigRegistry = {}  -- Track elements for save/load: {configKey = {element, type, setter}}
 
 	local Main = Create("Frame", {
 		Name = "MainWindow",
@@ -639,15 +546,6 @@ function SmoothUI:CreateWindow(config)
 					Get = function() return Enabled end
 				}
 
-				-- Register for config save/load if ConfigKey provided
-				if config.ConfigKey then
-					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
-						element = toggleAPI,
-						type = "toggle",
-						setter = Set
-					}
-				end
-
 				return toggleAPI
 			end
 
@@ -743,15 +641,6 @@ function SmoothUI:CreateWindow(config)
 					Get = function() return Value end
 				}
 
-				-- Register for config save/load if ConfigKey provided
-				if config.ConfigKey then
-					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
-						element = sliderAPI,
-						type = "slider",
-						setter = Set
-					}
-				end
-
 				return sliderAPI
 			end
 
@@ -796,220 +685,6 @@ function SmoothUI:CreateWindow(config)
 				return Input
 			end
 
-			function sectionAPI:CreateDropdown(config)
-				local Frame = self.CreateElement(55, "Dropdown_" .. toString(config.Name or "Dropdown"))
-				Corner(Frame, 8)
-
-				local Options = config.Options or {}
-				local CurrentOption = config.CurrentOption or (Options[1] or "None")
-				local MultiSelect = config.MultiSelect or false
-
-				local Label = Create("TextLabel", {
-					Name = "DropdownLabel",
-					Position = UDim2.fromOffset(12, 4),
-					Size = UDim2.new(1, -24, 0, 20),
-					BackgroundTransparency = 1,
-					Text = toString(config.Name or "Dropdown"),
-					TextColor3 = Theme.Text,
-					TextSize = 13,
-					Font = Enum.Font.GothamMedium,
-					TextXAlignment = Enum.TextXAlignment.Left
-				}, Frame)
-
-				local Button = Create("TextButton", {
-					Name = "DropdownButton",
-					Position = UDim2.fromOffset(10, 26),
-					Size = UDim2.new(1, -20, 0, 25),
-					BackgroundColor3 = Theme.Element,
-					Text = toString(CurrentOption),
-					TextColor3 = Theme.Text,
-					TextSize = 11,
-					Font = Enum.Font.Gotham,
-					AutoButtonColor = false,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextTruncate = Enum.TextTruncate.AtEnd,
-					ZIndex = 2
-				}, Frame)
-
-				Corner(Button, 6)
-				Create("UIPadding", {PaddingLeft = UDim.new(0, 8)}, Button)
-
-				local Arrow = Create("TextLabel", {
-					Name = "DropdownArrow",
-					Size = UDim2.fromOffset(20, 20),
-					Position = UDim2.new(1, -24, 0.5, 0),
-					AnchorPoint = Vector2.new(0, 0.5),
-					BackgroundTransparency = 1,
-					Text = "▼",
-					TextColor3 = Theme.Muted,
-					TextSize = 10,
-					Font = Enum.Font.GothamBold,
-					ZIndex = 2
-				}, Button)
-
-				-- Create dropdown list parented to ScreenGui for proper overlay (avoids clipping)
-				local DropdownFrame = Create("Frame", {
-					Name = "DropdownList",
-					Size = UDim2.fromOffset(Button.AbsoluteSize.X, 0),
-					BackgroundColor3 = Theme.Secondary,
-					BorderSizePixel = 0,
-					Visible = false,
-					ZIndex = 1000,
-					ClipsDescendants = true,
-					AutomaticSize = Enum.AutomaticSize.Y
-				}, self.Library.ScreenGui)
-
-				Corner(DropdownFrame, 6)
-				Stroke(DropdownFrame, Theme.Border, 0.5)
-				Create("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, DropdownFrame)
-
-				local function UpdateDropdownPosition()
-					if DropdownFrame.Visible then
-						local buttonAbsPos = Button.AbsolutePosition
-						local buttonAbsSize = Button.AbsoluteSize
-						DropdownFrame.Position = UDim2.fromOffset(buttonAbsPos.X, buttonAbsPos.Y + buttonAbsSize.Y + 2)
-						DropdownFrame.Size = UDim2.fromOffset(buttonAbsSize.X, 0)
-					end
-				end
-
-				local function CreateOption(optName, optValue)
-					local OptButton = Create("TextButton", {
-						Name = "Option_" .. toString(optName),
-						Size = UDim2.new(1, 0, 0, 24),
-						BackgroundTransparency = 1,
-						Text = "  " .. toString(optName),
-						TextColor3 = Theme.Text,
-						TextSize = 11,
-						Font = Enum.Font.Gotham,
-						AutoButtonColor = false,
-						TextXAlignment = Enum.TextXAlignment.Left,
-						ZIndex = 1001
-					}, DropdownFrame)
-
-					OptButton.MouseEnter:Connect(function()
-						Tween(OptButton, {BackgroundTransparency = 0.8, BackgroundColor3 = Theme.Accent})
-					end)
-					OptButton.MouseLeave:Connect(function()
-						Tween(OptButton, {BackgroundTransparency = 1})
-					end)
-
-					OptButton.MouseButton1Click:Connect(function()
-						if MultiSelect then
-							-- Toggle selection
-							CurrentOption[optValue] = not CurrentOption[optValue]
-							local selected = {}
-							for k, v in pairs(CurrentOption) do
-								if v then table.insert(selected, k) end
-							end
-							Button.Text = #selected > 0 and table.concat(selected, ", ") or "None"
-						else
-							CurrentOption = optValue
-							Button.Text = toString(optName)
-							DropdownFrame.Visible = false
-							Tween(Arrow, {Rotation = 0}, 0.15)
-						end
-						if config.Callback then
-							config.Callback(MultiSelect and CurrentOption or optValue)
-						end
-					end)
-
-					if not MultiSelect then
-						if CurrentOption == optValue then
-							OptButton.BackgroundTransparency = 0.8
-							OptButton.BackgroundColor3 = Theme.Accent
-						end
-					else
-						if CurrentOption[optValue] then
-							OptButton.BackgroundTransparency = 0.8
-							OptButton.BackgroundColor3 = Theme.Accent
-						end
-					end
-				end
-
-				for _, opt in ipairs(Options) do
-					if type(opt) == "table" then
-						CreateOption(opt.Name, opt.Value)
-					else
-						CreateOption(opt, opt)
-					end
-				end
-
-				Button.MouseButton1Click:Connect(function()
-					DropdownFrame.Visible = not DropdownFrame.Visible
-					Tween(Arrow, {Rotation = DropdownFrame.Visible and 90 or 0}, 0.15)
-					if DropdownFrame.Visible then
-						UpdateDropdownPosition()
-					end
-				end)
-
-				-- Update position when window moves/resizes
-				RunService.RenderStepped:Connect(function()
-					if DropdownFrame.Visible then
-						UpdateDropdownPosition()
-					end
-				end)
-
-				-- Close when clicking outside
-				UserInputService.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						local mousePos = UserInputService:GetMouseLocation()
-						local absPos = DropdownFrame.AbsolutePosition
-						local absSize = DropdownFrame.AbsoluteSize
-						if DropdownFrame.Visible and (mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X or mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y) then
-							-- Check if click was on the dropdown button itself
-							local btnAbsPos = Button.AbsolutePosition
-							local btnAbsSize = Button.AbsoluteSize
-							local onButton = mousePos.X >= btnAbsPos.X and mousePos.X <= btnAbsPos.X + btnAbsSize.X and mousePos.Y >= btnAbsPos.Y and mousePos.Y <= btnAbsPos.Y + btnAbsSize.Y
-							if not onButton then
-								DropdownFrame.Visible = false
-								Tween(Arrow, {Rotation = 0}, 0.15)
-							end
-						end
-					end
-				end)
-
-				local dropdownAPI = {
-					Set = function(val)
-						if MultiSelect then
-							CurrentOption = val or {}
-							local selected = {}
-							for k, v in pairs(CurrentOption) do if v then table.insert(selected, k) end end
-							Button.Text = #selected > 0 and table.concat(selected, ", ") or "None"
-						else
-							CurrentOption = val
-							Button.Text = toString(val)
-						end
-					end,
-					Get = function() return CurrentOption end,
-					Refresh = function(newOptions)
-						Options = newOptions or {}
-						-- Clear and rebuild
-						for _, child in ipairs(DropdownFrame:GetChildren()) do
-							if child:IsA("TextButton") then child:Destroy() end
-						end
-						for _, opt in ipairs(Options) do
-							if type(opt) == "table" then CreateOption(opt.Name, opt.Value) else CreateOption(opt, opt) end
-						end
-					end
-				}
-
-				-- Register for config save/load if ConfigKey provided
-				if config.ConfigKey then
-					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
-						element = dropdownAPI,
-						type = "dropdown",
-						setter = dropdownAPI.Set
-					}
-				end
-
-				return dropdownAPI
-			end
-
-			function sectionAPI:CreateSection(name)
-				-- Nested sections - create at page level
-				return CreateSection(name, Page)
-			end
-
 			return sectionAPI
 		end
 
@@ -1042,155 +717,6 @@ function SmoothUI:CreateWindow(config)
 		Main.Visible = not Main.Visible
 	end
 
-	-- Save API
-	function Window:AddSaveApi(cfg)
-		cfg = cfg or {}
-		local folderName = cfg.Folder or "StarFallHub"
-		local defaultConfig = cfg.DefaultConfig or "default"
-		local autoLoad = cfg.AutoLoad ~= false
-
-		-- Create Settings tab if it doesn't exist
-		local SettingsTab = nil
-		for _, tab in pairs(self.Tabs) do
-			if tab.Button and tab.Button.Text == "Settings" then
-				SettingsTab = tab
-				break
-			end
-		end
-		if not SettingsTab then
-			SettingsTab = self:CreateTab("Settings")
-		end
-
-		local SaveSection = SettingsTab:CreateSection("Configuration")
-
-		-- Config name input
-		local configNameInput = SaveSection:CreateTextbox({
-			Name = "Config Name",
-			PlaceholderText = "Enter config name...",
-			Callback = function(_)
-				-- Just store it, used by save/load
-			end
-		})
-		configNameInput.Text = defaultConfig
-
-		-- Config dropdown
-		local configDropdown = SaveSection:CreateDropdown({
-			Name = "Saved Configs",
-			Options = {},
-			CurrentOption = defaultConfig,
-			Callback = function(selected)
-				configNameInput.Text = selected
-			end
-		})
-
-		local function RefreshConfigs()
-			local files = SaveSystem.ListFiles(folderName)
-			local options = {}
-			for _, f in ipairs(files) do
-				local name = f:gsub("%.json$", "")
-				table.insert(options, name)
-			end
-			if #options == 0 then
-				options = {"(none)"}
-			end
-			configDropdown.Refresh(options)
-			if #options > 0 and options[1] ~= "(none)" then
-				configDropdown.Set(options[1])
-				configNameInput.Text = options[1]
-			end
-		end
-
-		-- Save button
-		SaveSection:CreateButton({
-			Name = "Save Config",
-			Callback = function()
-				local name = configNameInput.Text
-				if name == "" or name == "(none)" then
-					self.Library:Notify("Error", "Enter a config name first", 3)
-					return
-				end
-
-				-- For now, save _G table (common pattern)
-				local success, err = pcall(function()
-					SaveSystem.WriteFile(folderName, name .. ".json", HttpService:JSONEncode(_G))
-				end)
-
-				if success then
-					self.Library:Notify("Saved", "Config '" .. name .. "' saved!", 2)
-					RefreshConfigs()
-				else
-					self.Library:Notify("Error", "Failed to save: " .. tostring(err), 3)
-				end
-			end
-		})
-
-		-- Load button
-		SaveSection:CreateButton({
-			Name = "Load Config",
-			Callback = function()
-				local name = configNameInput.Text
-				if name == "" or name == "(none)" then
-					self.Library:Notify("Error", "Select a config first", 3)
-					return
-				end
-
-				local content = SaveSystem.ReadFile(folderName, name .. ".json")
-				if content then
-					local success, data = pcall(function()
-						return HttpService:JSONDecode(content)
-					end)
-					if success and data then
-						for k, v in pairs(data) do
-							_G[k] = v
-						end
-						self.Library:Notify("Loaded", "Config '" .. name .. "' loaded!", 2)
-						-- Trigger callbacks to update UI
-						-- Note: This requires elements to have Get/Set methods
-					else
-						self.Library:Notify("Error", "Invalid config file", 3)
-					end
-				else
-					self.Library:Notify("Error", "Config not found", 3)
-				end
-			end
-		})
-
-		-- Delete button
-		SaveSection:CreateButton({
-			Name = "Delete Config",
-			Callback = function()
-				local name = configNameInput.Text
-				if name == "" or name == "(none)" then
-					self.Library:Notify("Error", "Select a config first", 3)
-					return
-				end
-
-				SaveSystem.DeleteFile(folderName, name .. ".json")
-				self.Library:Notify("Deleted", "Config '" .. name .. "' deleted", 2)
-				RefreshConfigs()
-				configNameInput.Text = ""
-			end
-		})
-
-		-- Refresh button
-		SaveSection:CreateButton({
-			Name = "Refresh List",
-			Callback = function()
-				RefreshConfigs()
-				self.Library:Notify("Refreshed", "Config list updated", 2)
-			end
-		})
-
-		if autoLoad then
-			task.delay(0.5, RefreshConfigs)
-		end
-
-		return {
-			Refresh = RefreshConfigs,
-			Folder = folderName
-		}
-	end
-
 	Window.CreateTab = CreateTab
 	Window.Main = Main
 
@@ -1219,6 +745,7 @@ function SmoothUI.new()
 
 	return self
 end
+
 
 local Library = SmoothUI.new()
 
@@ -1287,14 +814,6 @@ Aimbot:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function
 Aimbot:CreateToggle({Name = "Team Check", CurrentValue = true, Callback = function(v) _G.TeamCheck = v end})
 Aimbot:CreateToggle({Name = "Wall Check", CurrentValue = true, Callback = function(v) _G.WallCheck = v end})
 
--- Dropdown example for target part selection
-Aimbot:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "Torso", "HumanoidRootPart", "Random"},
-    CurrentOption = "Head",
-    Callback = function(part) _G.AimbotPart = part end
-})
-
 Aimbot:CreateSlider({Name = "FOV", Range = {10, 360}, CurrentValue = 90, Callback = function(v) _G.FOV = v end})
 Aimbot:CreateSlider({Name = "Smoothness", Range = {1, 20}, CurrentValue = 5, Callback = function(v) _G.Smooth = v end})
 
@@ -1311,30 +830,6 @@ ESP:CreateToggle({Name = "Names", CurrentValue = false, Callback = function(v) _
 ESP:CreateToggle({Name = "Health", CurrentValue = false, Callback = function(v) _G.HealthESP = v end})
 ESP:CreateToggle({Name = "Distance", CurrentValue = false, Callback = function(v) _G.DistESP = v end})
 ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 1000, Callback = function(v) _G.MaxDist = v end})
-
--- ============ SETTINGS TAB ============
--- Add Save API (automatically creates Settings tab with full config management)
-Window:AddSaveApi({
-    Folder = "StarFallHub",
-    DefaultConfig = "default",
-    AutoLoad = true
-})
-
--- Optional: Add unload button to the created Settings tab
-local SettingsTab = nil
-for _, tab in pairs(Window.Tabs) do
-    if tab.Button and tab.Button.Text == "Settings" then
-        SettingsTab = tab
-        break
-    end
-end
-if SettingsTab then
-    local MiscSection = SettingsTab:CreateSection("Miscellaneous")
-    MiscSection:CreateButton({
-        Name = "Unload UI",
-        Callback = function() Window:Destroy() end
-    })
-end
 
 -- ============ STARTUP ============
 Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
