@@ -272,6 +272,7 @@ function SmoothUI:CreateWindow(config)
 	local Window = {}
 	Window.Tabs = {}
 	Window.Library = self  -- Store reference to Library for notifications
+	Window.ConfigRegistry = {}  -- Track elements for save/load: {configKey = {element, type, setter}}
 
 	local Main = Create("Frame", {
 		Name = "MainWindow",
@@ -633,10 +634,21 @@ function SmoothUI:CreateWindow(config)
 					Set(not Enabled)
 				end)
 
-				return {
+				local toggleAPI = {
 					Set = Set,
 					Get = function() return Enabled end
 				}
+
+				-- Register for config save/load if ConfigKey provided
+				if config.ConfigKey then
+					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
+						element = toggleAPI,
+						type = "toggle",
+						setter = Set
+					}
+				end
+
+				return toggleAPI
 			end
 
 			function sectionAPI:CreateSlider(config)
@@ -804,7 +816,8 @@ function SmoothUI:CreateWindow(config)
 					Font = Enum.Font.Gotham,
 					AutoButtonColor = false,
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextTruncate = Enum.TextTruncate.AtEnd
+					TextTruncate = Enum.TextTruncate.AtEnd,
+					ZIndex = 2
 				}, Frame)
 
 				Corner(Button, 6)
@@ -819,23 +832,34 @@ function SmoothUI:CreateWindow(config)
 					Text = "▼",
 					TextColor3 = Theme.Muted,
 					TextSize = 10,
-					Font = Enum.Font.GothamBold
+					Font = Enum.Font.GothamBold,
+					ZIndex = 2
 				}, Button)
 
+				-- Create dropdown list parented to ScreenGui for proper overlay (avoids clipping)
 				local DropdownFrame = Create("Frame", {
 					Name = "DropdownList",
-					Size = UDim2.new(1, -20, 0, 0),
-					Position = UDim2.fromOffset(10, 53),
+					Size = UDim2.fromOffset(Button.AbsoluteSize.X, 0),
 					BackgroundColor3 = Theme.Secondary,
 					BorderSizePixel = 0,
 					Visible = false,
-					ZIndex = 10,
+					ZIndex = 1000,
 					ClipsDescendants = true,
 					AutomaticSize = Enum.AutomaticSize.Y
-				}, Frame)
+				}, self.Library.ScreenGui)
 
 				Corner(DropdownFrame, 6)
+				Stroke(DropdownFrame, Theme.Border, 0.5)
 				Create("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, DropdownFrame)
+
+				local function UpdateDropdownPosition()
+					if DropdownFrame.Visible then
+						local buttonAbsPos = Button.AbsolutePosition
+						local buttonAbsSize = Button.AbsoluteSize
+						DropdownFrame.Position = UDim2.fromOffset(buttonAbsPos.X, buttonAbsPos.Y + buttonAbsSize.Y + 2)
+						DropdownFrame.Size = UDim2.fromOffset(buttonAbsSize.X, 0)
+					end
+				end
 
 				local function CreateOption(optName, optValue)
 					local OptButton = Create("TextButton", {
@@ -848,7 +872,7 @@ function SmoothUI:CreateWindow(config)
 						Font = Enum.Font.Gotham,
 						AutoButtonColor = false,
 						TextXAlignment = Enum.TextXAlignment.Left,
-						ZIndex = 10
+						ZIndex = 1001
 					}, DropdownFrame)
 
 					OptButton.MouseEnter:Connect(function()
@@ -902,6 +926,16 @@ function SmoothUI:CreateWindow(config)
 				Button.MouseButton1Click:Connect(function()
 					DropdownFrame.Visible = not DropdownFrame.Visible
 					Tween(Arrow, {Rotation = DropdownFrame.Visible and 90 or 0}, 0.15)
+					if DropdownFrame.Visible then
+						UpdateDropdownPosition()
+					end
+				end)
+
+				-- Update position when window moves/resizes
+				RunService.RenderStepped:Connect(function()
+					if DropdownFrame.Visible then
+						UpdateDropdownPosition()
+					end
 				end)
 
 				-- Close when clicking outside
@@ -911,8 +945,14 @@ function SmoothUI:CreateWindow(config)
 						local absPos = DropdownFrame.AbsolutePosition
 						local absSize = DropdownFrame.AbsoluteSize
 						if DropdownFrame.Visible and (mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X or mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y) then
-							DropdownFrame.Visible = false
-							Tween(Arrow, {Rotation = 0}, 0.15)
+							-- Check if click was on the dropdown button itself
+							local btnAbsPos = Button.AbsolutePosition
+							local btnAbsSize = Button.AbsoluteSize
+							local onButton = mousePos.X >= btnAbsPos.X and mousePos.X <= btnAbsPos.X + btnAbsSize.X and mousePos.Y >= btnAbsPos.Y and mousePos.Y <= btnAbsPos.Y + btnAbsSize.Y
+							if not onButton then
+								DropdownFrame.Visible = false
+								Tween(Arrow, {Rotation = 0}, 0.15)
+							end
 						end
 					end
 				end)
