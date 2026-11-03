@@ -353,22 +353,32 @@ function SmoothUI:CreateWindow(config)
 			})
 		end
 
-		local function CreateElement(height, name)
-			return Create("Frame", {
-				Name = name or "Element",
-				Size = UDim2.new(1, -5, 0, height),
-				BackgroundColor3 = Theme.Secondary,
-				BorderSizePixel = 0
-			}, Page)
-		end
+		local function CreateSection(name, parentContainer)
+			local Section = Create("Frame", {
+				Name = "Section_" .. toString(name),
+				Size = UDim2.new(1, -5, 0, 30),
+				BackgroundTransparency = 1
+			}, parentContainer)
 
-		function Tab:CreateSection(name)
-			local Section = CreateElement(30, "Section_" .. toString(name))
-			Section.BackgroundTransparency = 1
+			-- Arrow indicator (points down when expanded, right when collapsed)
+			local Arrow = Create("TextLabel", {
+				Name = "SectionArrow",
+				Size = UDim2.fromOffset(20, 20),
+				Position = UDim2.fromOffset(2, 5),
+				BackgroundTransparency = 1,
+				Text = "▼",
+				TextColor3 = Theme.Accent,
+				TextSize = 12,
+				Font = Enum.Font.GothamBold,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				Rotation = 0
+			}, Section)
 
-			Create("TextLabel", {
+			-- Section title (offset to make room for arrow)
+			local Title = Create("TextLabel", {
 				Name = "SectionLabel",
-				Size = UDim2.fromScale(1, 1),
+				Size = UDim2.new(1, -28, 1, 0),
+				Position = UDim2.fromOffset(24, 0),
 				BackgroundTransparency = 1,
 				Text = toString(name),
 				TextColor3 = Theme.Accent,
@@ -376,260 +386,311 @@ function SmoothUI:CreateWindow(config)
 				Font = Enum.Font.GothamBold,
 				TextXAlignment = Enum.TextXAlignment.Left
 			}, Section)
-		end
 
-		function Tab:CreateButton(config)
-			local Button = Create("Frame", {
-				Name = "Button_" .. toString(config.Name or "Button"),
-				Size = UDim2.new(1, -5, -0.0206417833, 40),
-				Position = UDim2.new(0, 0, 0.146718144, 0),
-				BackgroundColor3 = Theme.Secondary,
-				BorderSizePixel = 0
-			}, Page)
-			Corner(Button, 8)
-
-			local Text = Create("TextButton", {
-				Name = "ButtonLabel",
-				Size = UDim2.fromScale(1, 1),
+			-- Container for all elements in this section
+			local ElementsContainer = Create("Frame", {
+				Name = "SectionElements",
+				Size = UDim2.new(1, -5, 0, 0),
+				Position = UDim2.fromOffset(0, 30),
 				BackgroundTransparency = 1,
-				Text = toString(config.Name or "Button"),
-				TextColor3 = Theme.Text,
-				TextSize = 13,
-				Font = Enum.Font.GothamMedium,
-				AutoButtonColor = false
-			}, Button)
+				Visible = true,
+				ClipsDescendants = true,
+				AutomaticSize = Enum.AutomaticSize.Y
+			}, parentContainer)
 
-			Text.MouseEnter:Connect(function()
-				Tween(Button, {BackgroundColor3 = Theme.Element})
-			end)
+			Create("UIListLayout", {
+				Name = "SectionElementsLayout",
+				Padding = UDim.new(0, 8),
+				SortOrder = Enum.SortOrder.LayoutOrder
+			}, ElementsContainer)
 
-			Text.MouseLeave:Connect(function()
-				Tween(Button, {BackgroundColor3 = Theme.Secondary})
-			end)
+			local expanded = true
 
-			Text.MouseButton1Click:Connect(function()
-				if config.Callback then
-					task.spawn(config.Callback)
-				end
-			end)
-		end
-
-		function Tab:CreateToggle(config)
-			local Toggle = Create("Frame", {
-				Name = "Toggle_" .. toString(config.Name or "Toggle"),
-				Size = UDim2.new(1, -5, -0.0191817116, 40),
-				Position = UDim2.new(0, 0, 0.33204633, 0),
-				BackgroundColor3 = Theme.Secondary,
-				BorderSizePixel = 0
-			}, Page)
-			Corner(Toggle, 8)
-
-			local Enabled = config.CurrentValue or false
-
-			local Label = Create("TextLabel", {
-				Name = "ToggleLabel",
-				Position = UDim2.fromOffset(12, 0),
-				Size = UDim2.new(1, -65, 1, 0),
-				BackgroundTransparency = 1,
-				Text = toString(config.Name or "Toggle"),
-				TextColor3 = Theme.Text,
-				TextSize = 13,
-				Font = Enum.Font.GothamMedium,
-				TextXAlignment = Enum.TextXAlignment.Left
-			}, Toggle)
-
-			local Switch = Create("Frame", {
-				Name = "ToggleSwitch",
-				Size = UDim2.fromOffset(36, 19),
-				Position = UDim2.new(1, -48, 0.5, 0),
-				AnchorPoint = Vector2.new(0, 0.5),
-				BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
-			}, Toggle)
-
-			Corner(Switch, 20)
-
-			local Knob = Create("Frame", {
-				Name = "ToggleKnob",
-				Size = UDim2.fromOffset(13, 13),
-				Position = Enabled and UDim2.new(1, -16, 0.5, 0)
-					or UDim2.fromOffset(3, 3),
-				BackgroundColor3 = Color3.new(1, 1, 1)
-			}, Switch)
-
-			Corner(Knob, 20)
-
-			local function Set(value)
-				Enabled = value
-
-				Tween(Switch, {
-					BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
-				})
-
-				Tween(Knob, {
-					Position = Enabled and UDim2.new(1, -16, 0, 3)
-						or UDim2.fromOffset(3, 3)
-				})
-
-				if config.Callback then
-					config.Callback(Enabled)
-				end
+			local function SetExpanded(state)
+				expanded = state
+				ElementsContainer.Visible = state
+				Tween(Arrow, {Rotation = state and 0 or -90}, 0.2)
 			end
 
-			local Click = Create("TextButton", {
-				Name = "ToggleClickArea",
+			-- Make section header clickable
+			local ClickArea = Create("TextButton", {
+				Name = "SectionClickArea",
 				Size = UDim2.fromScale(1, 1),
 				BackgroundTransparency = 1,
 				Text = ""
-			}, Toggle)
+			}, Section)
 
-			Click.MouseButton1Click:Connect(function()
-				Set(not Enabled)
+			ClickArea.MouseButton1Click:Connect(function()
+				SetExpanded(not expanded)
 			end)
 
-			return {
-				Set = Set,
-				Get = function() return Enabled end
+			-- Return section API with element creators
+			local sectionAPI = {
+				SetExpanded = SetExpanded,
+				IsExpanded = function() return expanded end,
+				CreateElement = function(height, elementName)
+					return Create("Frame", {
+						Name = elementName or "Element",
+						Size = UDim2.new(1, -5, 0, height),
+						BackgroundColor3 = Theme.Secondary,
+						BorderSizePixel = 0
+					}, ElementsContainer)
+				end,
+				Container = ElementsContainer,
+				Arrow = Arrow,
+				Title = Title
 			}
-		end
 
-		function Tab:CreateSlider(config)
-			local Frame = Create("Frame", {
-				Name = "Slider_" .. toString(config.Name or "Slider"),
-				Size = UDim2.new(1, -5, -0.0683891848, 65),
-				Position = UDim2.new(0, 0, 0.517374516, 0),
-				BackgroundColor3 = Theme.Secondary,
-				BorderSizePixel = 0
-			}, Page)
-			Corner(Frame, 8)
+			-- Element creation methods
+			function sectionAPI:CreateButton(config)
+				local Button = self.CreateElement(40, "Button_" .. toString(config.Name or "Button"))
+				Corner(Button, 8)
 
-			local Min = config.Range and config.Range[1] or 0
-			local Max = config.Range and config.Range[2] or 100
-			local Value = math.clamp(config.CurrentValue or Min, Min, Max)
+				local Text = Create("TextButton", {
+					Name = "ButtonLabel",
+					Size = UDim2.fromScale(1, 1),
+					BackgroundTransparency = 1,
+					Text = toString(config.Name or "Button"),
+					TextColor3 = Theme.Text,
+					TextSize = 13,
+					Font = Enum.Font.GothamMedium,
+					AutoButtonColor = false
+				}, Button)
 
-			local Label = Create("TextLabel", {
-				Position = UDim2.fromOffset(12, 5),
-				Size = UDim2.new(1, -24, 0, 20),
-				BackgroundTransparency = 1,
-				Text = toString(config.Name or "Slider") .. ": " .. toString(Value),
-				TextColor3 = Theme.Text,
-				TextSize = 13,
-				Font = Enum.Font.GothamMedium,
-				TextXAlignment = Enum.TextXAlignment.Left
-			}, Frame)
+				Text.MouseEnter:Connect(function()
+					Tween(Button, {BackgroundColor3 = Theme.Element})
+				end)
 
-			local Bar = Create("Frame", {
-				Name = "SliderBar",
-				Position = UDim2.fromOffset(12, 29),
-				Size = UDim2.new(1, -24, -0.0066880458, 5),
-				BackgroundColor3 = Theme.Element
-			}, Frame)
+				Text.MouseLeave:Connect(function()
+					Tween(Button, {BackgroundColor3 = Theme.Secondary})
+				end)
 
-			Corner(Bar, 10)
-
-			local Fill = Create("Frame", {
-				Name = "SliderFill",
-				Size = UDim2.new((Value - Min) / (Max - Min), 0, 1, 0),
-				BackgroundColor3 = Theme.Accent
-			}, Bar)
-
-			Corner(Fill, 10)
-
-			local function Set(value)
-				Value = math.clamp(value, Min, Max)
-
-				local Percent = (Value - Min) / (Max - Min)
-
-				Tween(Fill, {
-					Size = UDim2.new(Percent, 0, 1, 0)
-				})
-
-				Label.Text = toString(config.Name or "Slider") .. ": " .. toString(Value)
-
-				if config.Callback then
-					config.Callback(Value)
-				end
+				Text.MouseButton1Click:Connect(function()
+					if config.Callback then
+						task.spawn(config.Callback)
+					end
+				end)
 			end
 
-			local function Update(input)
-				local Percent = math.clamp(
-					(input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X,
-					0, 1
-				)
+			function sectionAPI:CreateToggle(config)
+				local Toggle = self.CreateElement(40, "Toggle_" .. toString(config.Name or "Toggle"))
+				Corner(Toggle, 8)
 
-				Set(math.floor(Min + (Max - Min) * Percent))
+				local Enabled = config.CurrentValue or false
+
+				local Label = Create("TextLabel", {
+					Name = "ToggleLabel",
+					Position = UDim2.fromOffset(12, 0),
+					Size = UDim2.new(1, -65, 1, 0),
+					BackgroundTransparency = 1,
+					Text = toString(config.Name or "Toggle"),
+					TextColor3 = Theme.Text,
+					TextSize = 13,
+					Font = Enum.Font.GothamMedium,
+					TextXAlignment = Enum.TextXAlignment.Left
+				}, Toggle)
+
+				local Switch = Create("Frame", {
+					Name = "ToggleSwitch",
+					Size = UDim2.fromOffset(36, 19),
+					Position = UDim2.new(1, -48, 0.5, 0),
+					AnchorPoint = Vector2.new(0, 0.5),
+					BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
+				}, Toggle)
+
+				Corner(Switch, 20)
+
+				local Knob = Create("Frame", {
+					Name = "ToggleKnob",
+					Size = UDim2.fromOffset(13, 13),
+					Position = Enabled and UDim2.new(1, -16, 0.5, 0)
+						or UDim2.new(0, 3, 0.5, 0),
+					AnchorPoint = Vector2.new(0, 0.5),
+					BackgroundColor3 = Color3.new(1, 1, 1)
+				}, Switch)
+
+				Corner(Knob, 20)
+
+				local function Set(value)
+					Enabled = value
+
+					Tween(Switch, {
+						BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
+					})
+
+					-- Both states use Y scale 0.5 with AnchorPoint (0, 0.5) for perfect vertical centering
+					Tween(Knob, {
+						Position = Enabled and UDim2.new(1, -16, 0.5, 0)
+							or UDim2.new(0, 3, 0.5, 0)
+					})
+
+					if config.Callback then
+						config.Callback(Enabled)
+					end
+				end
+
+				local Click = Create("TextButton", {
+					Name = "ToggleClickArea",
+					Size = UDim2.fromScale(1, 1),
+					BackgroundTransparency = 1,
+					Text = ""
+				}, Toggle)
+
+				Click.MouseButton1Click:Connect(function()
+					Set(not Enabled)
+				end)
+
+				return {
+					Set = Set,
+					Get = function() return Enabled end
+				}
 			end
 
-			local Dragging = false
+			function sectionAPI:CreateSlider(config)
+				local Frame = self.CreateElement(65, "Slider_" .. toString(config.Name or "Slider"))
+				Corner(Frame, 8)
 
-			Bar.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1
-					or input.UserInputType == Enum.UserInputType.Touch then
-					Dragging = true
-					Update(input)
+				local Min = config.Range and config.Range[1] or 0
+				local Max = config.Range and config.Range[2] or 100
+				local Value = math.clamp(config.CurrentValue or Min, Min, Max)
+
+				local Label = Create("TextLabel", {
+					Position = UDim2.fromOffset(12, 5),
+					Size = UDim2.new(1, -24, 0, 20),
+					BackgroundTransparency = 1,
+					Text = toString(config.Name or "Slider") .. ": " .. toString(Value),
+					TextColor3 = Theme.Text,
+					TextSize = 13,
+					Font = Enum.Font.GothamMedium,
+					TextXAlignment = Enum.TextXAlignment.Left
+				}, Frame)
+
+				local Bar = Create("Frame", {
+					Name = "SliderBar",
+					Position = UDim2.fromOffset(12, 29),
+					Size = UDim2.new(1, -24, 0, 5),
+					BackgroundColor3 = Theme.Element
+				}, Frame)
+
+				Corner(Bar, 10)
+
+				local Fill = Create("Frame", {
+					Name = "SliderFill",
+					Size = UDim2.new((Value - Min) / (Max - Min), 0, 1, 0),
+					BackgroundColor3 = Theme.Accent
+				}, Bar)
+
+				Corner(Fill, 10)
+
+				local function Set(value)
+					Value = math.clamp(value, Min, Max)
+
+					local Percent = (Value - Min) / (Max - Min)
+
+					Tween(Fill, {
+						Size = UDim2.new(Percent, 0, 1, 0)
+					})
+
+					Label.Text = toString(config.Name or "Slider") .. ": " .. toString(Value)
+
+					if config.Callback then
+						config.Callback(Value)
+					end
 				end
-			end)
 
-			UserInputService.InputChanged:Connect(function(input)
-				if Dragging and (
-					input.UserInputType == Enum.UserInputType.MouseMovement
-						or input.UserInputType == Enum.UserInputType.Touch
-					) then
-					Update(input)
+				local function Update(input)
+					local Percent = math.clamp(
+						(input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X,
+						0, 1
+					)
+
+					Set(math.floor(Min + (Max - Min) * Percent))
 				end
-			end)
 
-			UserInputService.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1
-					or input.UserInputType == Enum.UserInputType.Touch then
-					Dragging = false
-				end
-			end)
+				local Dragging = false
 
-			return {
-				Set = Set,
-				Get = function() return Value end
-			}
+				Bar.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1
+						or input.UserInputType == Enum.UserInputType.Touch then
+						Dragging = true
+						Update(input)
+					end
+				end)
+
+				UserInputService.InputChanged:Connect(function(input)
+					if Dragging and (
+						input.UserInputType == Enum.UserInputType.MouseMovement
+							or input.UserInputType == Enum.UserInputType.Touch
+						) then
+						Update(input)
+					end
+				end)
+
+				UserInputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1
+						or input.UserInputType == Enum.UserInputType.Touch then
+						Dragging = false
+					end
+				end)
+
+				return {
+					Set = Set,
+					Get = function() return Value end
+				}
+			end
+
+			function sectionAPI:CreateTextbox(config)
+				local Frame = self.CreateElement(65, "Textbox_" .. toString(config.Name or "Textbox"))
+				Corner(Frame, 8)
+
+				Create("TextLabel", {
+					Name = "TextboxLabel",
+					Position = UDim2.fromOffset(12, 4),
+					Size = UDim2.new(1, -24, 0, 20),
+					BackgroundTransparency = 1,
+					Text = toString(config.Name or "Textbox"),
+					TextColor3 = Theme.Text,
+					TextSize = 13,
+					Font = Enum.Font.GothamMedium,
+					TextXAlignment = Enum.TextXAlignment.Left
+				}, Frame)
+
+				local Input = Create("TextBox", {
+					Name = "TextboxInput",
+					Position = UDim2.fromOffset(10, 29),
+					Size = UDim2.new(1, -20, 0, 28),
+					BackgroundColor3 = Theme.Element,
+					Text = "",
+					PlaceholderText = config.PlaceholderText or "Enter text...",
+					TextColor3 = Theme.Text,
+					PlaceholderColor3 = Theme.Muted,
+					TextSize = 12,
+					Font = Enum.Font.Gotham,
+					ClearTextOnFocus = false
+				}, Frame)
+
+				Corner(Input, 6)
+
+				Input.FocusLost:Connect(function()
+					if config.Callback then
+						config.Callback(Input.Text)
+					end
+				end)
+
+				return Input
+			end
+
+			function sectionAPI:CreateSection(name)
+				-- Nested sections - create at page level
+				return CreateSection(name, Page)
+			end
+
+			return sectionAPI
 		end
 
-		function Tab:CreateTextbox(config)
-			local Frame = CreateElement(65, "Textbox_" .. toString(config.Name or "Textbox"))
-			Corner(Frame, 8)
-
-			Create("TextLabel", {
-				Name = "TextboxLabel",
-				Position = UDim2.fromOffset(12, 4),
-				Size = UDim2.new(1, -24, 0, 20),
-				BackgroundTransparency = 1,
-				Text = toString(config.Name or "Textbox"),
-				TextColor3 = Theme.Text,
-				TextSize = 13,
-				Font = Enum.Font.GothamMedium,
-				TextXAlignment = Enum.TextXAlignment.Left
-			}, Frame)
-
-			local Input = Create("TextBox", {
-				Name = "TextboxInput",
-				Position = UDim2.fromOffset(10, 29),
-				Size = UDim2.new(1, -20, 0, 28),
-				BackgroundColor3 = Theme.Element,
-				Text = "",
-				PlaceholderText = config.PlaceholderText or "Enter text...",
-				TextColor3 = Theme.Text,
-				PlaceholderColor3 = Theme.Muted,
-				TextSize = 12,
-				Font = Enum.Font.Gotham,
-				ClearTextOnFocus = false
-			}, Frame)
-
-			Corner(Input, 6)
-
-			Input.FocusLost:Connect(function()
-				if config.Callback then
-					config.Callback(Input.Text)
-				end
-			end)
-
-			return Input
+		-- Tab-level CreateSection - creates section on the page
+		function Tab:CreateSection(name)
+			return CreateSection(name, Page)
 		end
 
 		Tab.Button = TabButton
@@ -685,47 +746,6 @@ function SmoothUI.new()
 	return self
 end
 
-local Library = SmoothUI.new()
 
-local Window = Library:CreateWindow({
-	Title = "My Script Hub"
-})
-
-local MainTab = Window:CreateTab("Main")
-
-MainTab:CreateSection("Main Features")
-
-MainTab:CreateButton({
-	Name = "Test Button",
-	Callback = function()
-		Library:Notify("Hello", "It works!", 3)
-	end
-})
-
-MainTab:CreateToggle({
-	Name = "Test Toggle",
-	Callback = function(enabled)
-		print(enabled)
-	end
-})
-
-MainTab:CreateSlider({
-	Name = "WalkSpeed",
-	Range = {16, 100},
-	CurrentValue = 16,
-	Callback = function(value)
-		print("WalkSpeed:", value)
-	end
-})
-
-MainTab:CreateTextbox({
-	Name = "Player Name",
-	PlaceholderText = "Enter username...",
-	Callback = function(value)
-		print(value)
-	end
-})
-
-Library:Notify("Welcome", "Smooth UI loaded successfully!", 4)
 
 return SmoothUI
