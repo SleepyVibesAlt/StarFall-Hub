@@ -19,6 +19,7 @@ A lightweight, modern Roblox UI library with smooth animations, collapsible sect
 | **🔔 Toast Notifications** | Auto-dismissing notifications with countdown timers |
 | **🎯 Smooth Animations** | Quart easing on all transitions (toggles, sliders, sections, notifications) |
 | **📦 Zero Dependencies** | Single file, no external requires |
+| **📋 Dropdown Selector** | Inline single/multi-select dropdowns that push elements down |
 
 ---
 
@@ -214,6 +215,73 @@ print(SpeedSlider:Get()) -- 100
 
 ---
 
+### `Section:CreateTextbox(config)`
+Adds a text input field.
+
+```lua
+Section:CreateTextbox({
+    Name = "Player Name",
+    PlaceholderText = "Enter username...",
+    Callback = function(text)
+        print("Searching for:", text)
+    end
+})
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Name` | string | ✅ | Label above input |
+| `PlaceholderText` | string | ❌ | Placeholder (default: "Enter text...") |
+| `Callback` | function | ✅ | Called with `text` (string) on focus lost |
+
+**Returns:** `TextBox` instance (for advanced use)
+
+---
+
+### `Section:CreateDropdown(config)`
+Adds an inline dropdown selector (single or multi-select) that expands within the section layout, pushing other elements down.
+
+```lua
+local MyDropdown = Section:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "Torso", "Random"},  -- or {Name="Head", Value="head"}, ...
+    CurrentOption = "Head",                  -- default: first option
+    MultiSelect = false,                     -- optional, default: false
+    Callback = function(selected)
+        print("Selected:", selected)
+    end
+})
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Name` | string | ✅ | Label above dropdown |
+| `Options` | table | ✅ | Array of strings or `{Name, Value}` tables |
+| `CurrentOption` | any | ❌ | Initial selection (default: first option) |
+| `MultiSelect` | boolean | ❌ | Enable multi-select (default: `false`) |
+| `Callback` | function | ✅ | Called with selected value(s) |
+
+**Returns:** `{ Set = function(val), Get = function() : val, Refresh = function(newOptions), SetExpanded = function(bool), IsExpanded = function() : bool, Destroy = function() }`
+
+**Programmatic Control:**
+```lua
+MyDropdown:Set("Torso")              -- Set selection
+MyDropdown:Get()                     -- Get current selection
+MyDropdown.Refresh({"New", "Opts"})  -- Update options list
+MyDropdown.SetExpanded(true)         -- Expand dropdown
+MyDropdown.IsExpanded()              -- Check if expanded
+MyDropdown.Destroy()                 -- Clean up and remove dropdown
+```
+
+**Features:**
+- Inline expansion — pushes other section elements down via UIListLayout
+- Smooth height animation on expand/collapse
+- Single or multi-select modes
+- Click outside to close (single select)
+- Automatic option highlighting
+
+---
+
 ### Section Methods
 
 ```lua
@@ -315,6 +383,49 @@ local Noclip = Player:CreateToggle({
     Name = "Noclip",
     CurrentValue = false,
     Callback = function(v) _G.Noclip = v end
+})
+
+-- Dropdown example (single select)
+local TargetPart = Player:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"},
+    CurrentOption = "Head",
+    MultiSelect = false,
+    Callback = function(selected)
+        _G.TargetPart = selected
+        Library:Notify("Target Changed", "Now targeting: " .. selected, 2)
+    end
+})
+
+-- Dropdown example (multi select)
+local MultiSelect = Player:CreateDropdown({
+    Name = "Multi Select",
+    Options = {"Option A", "Option B", "Option C", "Option D"},
+    CurrentOption = {},
+    MultiSelect = true,
+    Callback = function(selected)
+        local names = {}
+        for k, v in pairs(selected) do
+            if v then table.insert(names, k) end
+        end
+        Library:Notify("Multi-Select", "Selected: " .. table.concat(names, ", "), 2)
+    end
+})
+
+-- Dropdown example with Name/Value tables
+local CustomDropdown = Player:CreateDropdown({
+    Name = "Custom Values",
+    Options = {
+        {Name = "Head", Value = "HeadPart"},
+        {Name = "Torso", Value = "TorsoPart"},
+        {Name = "HumanoidRootPart", Value = "HRP"},
+    },
+    CurrentOption = "HeadPart",  -- Set by Value
+    MultiSelect = false,
+    Callback = function(selected)
+        _G.CustomValue = selected
+        print("Custom dropdown selected:", selected)
+    end
 })
 
 -- ============ COMBAT TAB ============

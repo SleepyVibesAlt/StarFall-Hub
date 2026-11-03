@@ -685,6 +685,419 @@ function SmoothUI:CreateWindow(config)
 				return Input
 			end
 
+			function sectionAPI:CreateDropdown(config)
+				config = config or {}
+				local Options = config.Options or {}
+				local CurrentOption = config.CurrentOption
+				local MultiSelect = config.MultiSelect or false
+				local Callback = config.Callback
+
+				-- Normalize options to {Name, Value} format
+				local function normalizeOptions(opts)
+					local normalized = {}
+					for i, opt in ipairs(opts) do
+						if type(opt) == "table" then
+							table.insert(normalized, {Name = opt.Name or tostring(opt.Value or opt), Value = opt.Value or opt.Name or tostring(opt)})
+						else
+							table.insert(normalized, {Name = tostring(opt), Value = opt})
+						end
+					end
+					return normalized
+				end
+
+				Options = normalizeOptions(Options)
+
+				-- Initialize CurrentOption based on option format
+				if MultiSelect then
+					if type(CurrentOption) ~= "table" then
+						CurrentOption = {}
+					end
+					local newCurrent = {}
+					for _, opt in ipairs(Options) do
+						if CurrentOption[opt.Value] == true or CurrentOption[opt.Name] == true then
+							newCurrent[opt.Value] = true
+						end
+					end
+					CurrentOption = newCurrent
+				else
+					if CurrentOption == nil and #Options > 0 then
+						CurrentOption = Options[1].Value
+					elseif CurrentOption ~= nil then
+						local found = false
+						for _, opt in ipairs(Options) do
+							if opt.Value == CurrentOption or opt.Name == CurrentOption then
+								CurrentOption = opt.Value
+								found = true
+								break
+							end
+						end
+						if not found then
+							CurrentOption = #Options > 0 and Options[1].Value or nil
+						end
+					end
+				end
+
+				-- Selection highlight color (lighter accent for visibility)
+				local SelectionHighlight = Color3.fromRGB(
+					math.min(255, math.floor(Theme.Accent.R * 255 + 60)),
+					math.min(255, math.floor(Theme.Accent.G * 255 + 60)),
+					math.min(255, math.floor(Theme.Accent.B * 255 + 60))
+				)
+
+				-- Layout constants
+				local LABEL_HEIGHT = 24
+				local LABEL_GAP = 2
+				local BUTTON_HEIGHT = 25
+				local BUTTON_GAP = 4
+				local OPTION_HEIGHT = 24
+				local OPTION_GAP = 2
+				local BOTTOM_PADDING = 10
+
+				-- Calculate collapsed height
+				local collapsedHeight = LABEL_HEIGHT + LABEL_GAP + BUTTON_HEIGHT + BOTTOM_PADDING
+
+				-- Main element frame - goes in the section's ElementsContainer
+				local ElementFrame = self.CreateElement(collapsedHeight, "Dropdown_" .. toString(config.Name or "Dropdown"))
+				ElementFrame.BackgroundColor3 = Theme.Secondary
+				ElementFrame.ClipsDescendants = true
+				Corner(ElementFrame, 8)
+				Stroke(ElementFrame)
+
+				-- Label
+				Create("TextLabel", {
+					Name = "DropdownLabel",
+					Position = UDim2.fromOffset(12, 4),
+					Size = UDim2.new(1, -24, 0, LABEL_HEIGHT),
+					BackgroundTransparency = 1,
+					Text = config.Name or "Dropdown",
+					TextColor3 = Theme.Text,
+					TextSize = 13,
+					Font = Enum.Font.GothamMedium,
+					TextXAlignment = Enum.TextXAlignment.Left
+				}, ElementFrame)
+
+				-- Dropdown button (shows current selection)
+				local Button = Create("TextButton", {
+					Name = "DropdownButton",
+					Position = UDim2.fromOffset(10, LABEL_HEIGHT + LABEL_GAP),
+					Size = UDim2.new(1, -20, 0, BUTTON_HEIGHT),
+					BackgroundColor3 = Theme.Element,
+					Text = "",
+					TextColor3 = Theme.Text,
+					TextSize = 11,
+					Font = Enum.Font.Gotham,
+					AutoButtonColor = false,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextTruncate = Enum.TextTruncate.AtEnd,
+					ZIndex = 2
+				}, ElementFrame)
+
+				Corner(Button, 6)
+				Create("UIPadding", {PaddingLeft = UDim.new(0, 8)}, Button)
+
+				-- Arrow indicator
+				local Arrow = Create("TextLabel", {
+					Name = "DropdownArrow",
+					Size = UDim2.fromOffset(20, 20),
+					Position = UDim2.new(1, -24, 0.5, 0),
+					AnchorPoint = Vector2.new(0, 0.5),
+					BackgroundTransparency = 1,
+					Text = "▼",
+					TextColor3 = Theme.Muted,
+					TextSize = 10,
+					Font = Enum.Font.GothamBold,
+					ZIndex = 2
+				}, Button)
+
+				-- Options container (inside ElementFrame, below button)
+				local OptionsContainer = Create("Frame", {
+					Name = "OptionsContainer",
+					Position = UDim2.fromOffset(10, LABEL_HEIGHT + LABEL_GAP + BUTTON_HEIGHT + BUTTON_GAP),
+					Size = UDim2.new(1, -20, 0, 0),
+					BackgroundTransparency = 1,
+					Visible = false,
+					ClipsDescendants = true,
+					AutomaticSize = Enum.AutomaticSize.Y
+				}, ElementFrame)
+
+				local OptionsLayout = Create("UIListLayout", {
+					Padding = UDim.new(0, OPTION_GAP),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				}, OptionsContainer)
+
+				local expanded = false
+				local outsideConnection = nil
+
+				-- Helper: get display text for current selection
+				local function getDisplayText()
+					if MultiSelect then
+						local selected = {}
+						for _, opt in ipairs(Options) do
+							if CurrentOption[opt.Value] then
+								table.insert(selected, opt.Name)
+							end
+						end
+						return #selected > 0 and table.concat(selected, ", ") or "None"
+					else
+						if CurrentOption == nil then return "None" end
+						for _, opt in ipairs(Options) do
+							if opt.Value == CurrentOption then
+								return opt.Name
+							end
+						end
+						return tostring(CurrentOption)
+					end
+				end
+
+				-- Helper: update all option highlights
+				local function updateHighlights()
+					for _, child in ipairs(OptionsContainer:GetChildren()) do
+						if child:IsA("TextButton") then
+							local optValue = child:GetAttribute("OptionValue")
+							local isSelected = false
+							if MultiSelect then
+								isSelected = CurrentOption[optValue] == true
+							else
+								isSelected = CurrentOption == optValue
+							end
+
+							if isSelected then
+								Tween(child, {BackgroundTransparency = 0.7, BackgroundColor3 = SelectionHighlight})
+							else
+								Tween(child, {BackgroundTransparency = 1})
+							end
+						end
+					end
+				end
+
+				-- Expand/collapse logic
+				local function SetExpanded(state)
+					expanded = state
+					OptionsContainer.Visible = state
+
+					if state then
+						-- Calculate expanded height
+						local optionsHeight = 0
+						for _, child in ipairs(OptionsContainer:GetChildren()) do
+							if child:IsA("TextButton") then
+								optionsHeight = optionsHeight + OPTION_HEIGHT + OPTION_GAP
+							end
+						end
+						local totalHeight = LABEL_HEIGHT + LABEL_GAP + BUTTON_HEIGHT + BUTTON_GAP + optionsHeight + BOTTOM_PADDING
+						Tween(ElementFrame, {Size = UDim2.new(1, -5, 0, totalHeight)}, 0.2)
+						Tween(Arrow, {Rotation = 90}, 0.15)
+
+						-- Add click-outside detection for single select
+						if not MultiSelect and not outsideConnection then
+							outsideConnection = UserInputService.InputBegan:Connect(function(input)
+								if input.UserInputType == Enum.UserInputType.MouseButton1 and expanded then
+									local mousePos = UserInputService:GetMouseLocation()
+									local absPos = ElementFrame.AbsolutePosition
+									local absSize = ElementFrame.AbsoluteSize
+
+									-- Check if click is outside the element frame
+									if mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X
+									   or mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y then
+										SetExpanded(false)
+									end
+								end
+							end)
+						end
+					else
+						Tween(ElementFrame, {Size = UDim2.new(1, -5, 0, collapsedHeight)}, 0.2)
+						Tween(Arrow, {Rotation = 0}, 0.15)
+
+						-- Clean up click-outside connection
+						if outsideConnection then
+							outsideConnection:Disconnect()
+							outsideConnection = nil
+						end
+					end
+				end
+
+				-- Function to create option buttons
+				local function CreateOption(optName, optValue, layoutOrder)
+					local OptButton = Create("TextButton", {
+						Name = "Option_" .. tostring(optName),
+						Size = UDim2.new(1, 0, 0, OPTION_HEIGHT),
+						BackgroundTransparency = 1,
+						Text = "  " .. tostring(optName),
+						TextColor3 = Theme.Text,
+						TextSize = 11,
+						Font = Enum.Font.Gotham,
+						AutoButtonColor = false,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						LayoutOrder = layoutOrder
+					}, OptionsContainer)
+
+					-- Store the value as an attribute for reliable comparison
+					OptButton:SetAttribute("OptionValue", optValue)
+
+					Corner(OptButton, 4)
+
+					-- Initial highlight
+					local isSelected = false
+					if MultiSelect then
+						isSelected = CurrentOption[optValue] == true
+					else
+						isSelected = CurrentOption == optValue
+					end
+
+					if isSelected then
+						OptButton.BackgroundTransparency = 0.7
+						OptButton.BackgroundColor3 = SelectionHighlight
+					end
+
+					OptButton.MouseEnter:Connect(function()
+						if not isSelected then
+							Tween(OptButton, {BackgroundTransparency = 0.9, BackgroundColor3 = Theme.Accent})
+						end
+					end)
+					OptButton.MouseLeave:Connect(function()
+						if not isSelected then
+							Tween(OptButton, {BackgroundTransparency = 1})
+						end
+					end)
+
+					OptButton.MouseButton1Click:Connect(function()
+						if MultiSelect then
+							CurrentOption[optValue] = not CurrentOption[optValue]
+							isSelected = CurrentOption[optValue]
+
+							local selected = {}
+							for _, opt in ipairs(Options) do
+								if CurrentOption[opt.Value] then
+									table.insert(selected, opt.Name)
+								end
+							end
+							Button.Text = #selected > 0 and table.concat(selected, ", ") or "None"
+
+							-- Update visual
+							if isSelected then
+								Tween(OptButton, {BackgroundTransparency = 0.7, BackgroundColor3 = SelectionHighlight})
+							else
+								Tween(OptButton, {BackgroundTransparency = 1})
+							end
+						else
+							-- Single select: if clicking already selected option, unselect it
+							if CurrentOption == optValue then
+								CurrentOption = nil
+								Button.Text = "None"
+
+								-- Remove highlight from all options
+								for _, child in ipairs(OptionsContainer:GetChildren()) do
+									if child:IsA("TextButton") then
+										Tween(child, {BackgroundTransparency = 1})
+									end
+								end
+							else
+								CurrentOption = optValue
+								Button.Text = optName
+
+								-- Update all option highlights
+								updateHighlights()
+							end
+
+							-- Auto-close for single select after brief delay to show highlight
+							task.defer(function()
+								task.wait(0.15)
+								if expanded then
+									SetExpanded(false)
+								end
+							end)
+						end
+
+						if Callback then
+							task.spawn(Callback, MultiSelect and CurrentOption or CurrentOption)
+						end
+					end)
+				end
+
+				-- Create initial options
+				for i, opt in ipairs(Options) do
+					CreateOption(opt.Name, opt.Value, i)
+				end
+
+				Button.Text = getDisplayText()
+
+				Button.MouseButton1Click:Connect(function()
+					SetExpanded(not expanded)
+				end)
+
+				-- Return API
+				return {
+					Set = function(val)
+						if MultiSelect then
+							CurrentOption = val or {}
+							-- Normalize to Value keys
+							local normalized = {}
+							for _, opt in ipairs(Options) do
+								if CurrentOption[opt.Value] == true or CurrentOption[opt.Name] == true then
+									normalized[opt.Value] = true
+								end
+							end
+							CurrentOption = normalized
+							Button.Text = getDisplayText()
+						else
+							-- Find matching option
+							local found = false
+							if val ~= nil then
+								for _, opt in ipairs(Options) do
+									if opt.Value == val or opt.Name == val then
+										CurrentOption = opt.Value
+										found = true
+										break
+									end
+								end
+							end
+							if not found then
+								CurrentOption = nil
+							end
+							Button.Text = getDisplayText()
+						end
+						updateHighlights()
+					end,
+					Get = function()
+						if MultiSelect then
+							-- Return both Name and Value for convenience
+							local result = {}
+							for _, opt in ipairs(Options) do
+								if CurrentOption[opt.Value] then
+									result[opt.Name] = true
+									result[opt.Value] = true
+								end
+							end
+							return result
+						else
+							return CurrentOption
+						end
+					end,
+					Refresh = function(newOptions)
+						Options = normalizeOptions(newOptions or {})
+						CurrentOption = MultiSelect and {} or (#Options > 0 and Options[1].Value or nil)
+						Button.Text = getDisplayText()
+
+						-- Clear and rebuild
+						for _, child in ipairs(OptionsContainer:GetChildren()) do
+							if child:IsA("TextButton") then child:Destroy() end
+						end
+						for i, opt in ipairs(Options) do
+							CreateOption(opt.Name, opt.Value, i)
+						end
+						updateHighlights()
+					end,
+					SetExpanded = SetExpanded,
+					IsExpanded = function() return expanded end,
+					Destroy = function()
+						if outsideConnection then
+							outsideConnection:Disconnect()
+							outsideConnection = nil
+						end
+						ElementFrame:Destroy()
+					end
+				}
+			end
+
 			return sectionAPI
 		end
 
