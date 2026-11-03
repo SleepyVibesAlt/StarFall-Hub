@@ -738,10 +738,21 @@ function SmoothUI:CreateWindow(config)
 					end
 				end)
 
-				return {
+				local sliderAPI = {
 					Set = Set,
 					Get = function() return Value end
 				}
+
+				-- Register for config save/load if ConfigKey provided
+				if config.ConfigKey then
+					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
+						element = sliderAPI,
+						type = "slider",
+						setter = Set
+					}
+				end
+
+				return sliderAPI
 			end
 
 			function sectionAPI:CreateTextbox(config)
@@ -957,7 +968,7 @@ function SmoothUI:CreateWindow(config)
 					end
 				end)
 
-				return {
+				local dropdownAPI = {
 					Set = function(val)
 						if MultiSelect then
 							CurrentOption = val or {}
@@ -981,6 +992,17 @@ function SmoothUI:CreateWindow(config)
 						end
 					end
 				}
+
+				-- Register for config save/load if ConfigKey provided
+				if config.ConfigKey then
+					self.Container.Parent.Parent.Parent.Parent.Window.ConfigRegistry[config.ConfigKey] = {
+						element = dropdownAPI,
+						type = "dropdown",
+						setter = dropdownAPI.Set
+					}
+				end
+
+				return dropdownAPI
 			end
 
 			function sectionAPI:CreateSection(name)
@@ -1316,13 +1338,5 @@ end
 
 -- ============ STARTUP ============
 Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
-
--- Auto-collapse sections after 10 seconds
-task.delay(10, function()
-    General:SetExpanded(false)
-    Player:SetExpanded(false)
-    Aimbot:SetExpanded(false)
-    ESP:SetExpanded(false)
-end)
 
 return SmoothUI
