@@ -279,6 +279,7 @@ MyDropdown.Destroy()                 -- Clean up and remove dropdown
 - Single or multi-select modes
 - Click outside to close (single select)
 - Automatic option highlighting
+- **Selection highlight feedback** — Single-select briefly highlights the chosen option (0.3s) before auto-closing, matching multi-select visual behavior
 
 ---
 
