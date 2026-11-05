@@ -32,14 +32,15 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 
-local Theme = {
+local ThemeColor = {
 	Background = Color3.fromRGB(18, 18, 24),
 	Secondary = Color3.fromRGB(26, 26, 34),
 	Element = Color3.fromRGB(34, 34, 44),
 	Accent = Color3.fromRGB(130, 90, 255),
 	Text = Color3.fromRGB(240, 240, 245),
 	Muted = Color3.fromRGB(145, 145, 160),
-	Border = Color3.fromRGB(48, 48, 60)
+	Border = Color3.fromRGB(48, 48, 60),
+	PureWhite = Color3.fromRGB(255, 255, 255)
 }
 
 local function Create(class, properties, parent)
@@ -59,11 +60,12 @@ local function Corner(parent, radius)
 	}, parent)
 end
 
-local function Stroke(parent, color, transparency)
+local function Stroke(parent, color, transparency, Border)
 	Create("UIStroke", {
-		Color = color or Theme.Border,
+		Color = color or ThemeColor.Border,
 		Transparency = transparency or 0,
-		Thickness = 1
+		Thickness = 1,
+		ApplyStrokeMode = Border or Enum.ApplyStrokeMode.Border
 	}, parent)
 end
 
@@ -84,15 +86,16 @@ function SmoothUI:Notify(title, message, duration)
 	local notification = Create("TextButton", {
 		Name = "Notification",
 		Size = UDim2.fromOffset(280, 50),
-		Position = UDim2.new(1, 300, 1, -80),
+		Position = UDim2.new(1, 300, 1, -30),
 		AnchorPoint = Vector2.new(1, 1),
-		BackgroundColor3 = Theme.Secondary,
+		BackgroundColor3 = ThemeColor.Secondary,
 		BorderSizePixel = 0,
 		Text = "",
 		AutoButtonColor = false
 	}, self.ScreenGui)
 
 	Corner(notification, 8)
+	Stroke(notification, ThemeColor.Border, 0)
 
 	-- Title
 	Create("TextLabel", {
@@ -101,7 +104,7 @@ function SmoothUI:Notify(title, message, duration)
 		Size = UDim2.new(1, -24, 0, 20),
 		BackgroundTransparency = 1,
 		Text = toString(title),
-		TextColor3 = Theme.Text,
+		TextColor3 = ThemeColor.Text,
 		TextSize = 14,
 		Font = Enum.Font.GothamBold,
 		TextXAlignment = Enum.TextXAlignment.Left
@@ -114,7 +117,7 @@ function SmoothUI:Notify(title, message, duration)
 		Size = UDim2.new(1, -24, 0, 20),
 		BackgroundTransparency = 1,
 		Text = toString(message),
-		TextColor3 = Theme.Muted,
+		TextColor3 = ThemeColor.Muted,
 		TextSize = 11,
 		Font = Enum.Font.Gotham,
 		TextWrapped = true,
@@ -128,7 +131,7 @@ function SmoothUI:Notify(title, message, duration)
 		Position = UDim2.new(1, -40, 0, 2),
 		BackgroundTransparency = 1,
 		Text = tostring(duration) .. "s",
-		TextColor3 = Theme.Muted,
+		TextColor3 = ThemeColor.Muted,
 		TextSize = 9,
 		Font = Enum.Font.GothamMedium,
 		TextXAlignment = Enum.TextXAlignment.Right
@@ -142,7 +145,7 @@ function SmoothUI:Notify(title, message, duration)
 
 		-- Slide out horizontally
 		Tween(notification, {
-			Position = UDim2.new(1, 300, 1, -80)
+			Position = UDim2.new(1, 300, 1, -30)
 		}, 0.25)
 
 		task.wait(0.3)
@@ -154,7 +157,7 @@ function SmoothUI:Notify(title, message, duration)
 
 	-- Slide in horizontally
 	Tween(notification, {
-		Position = UDim2.new(1, -20, 1, -80)
+		Position = UDim2.new(1, -20, 1, -30)
 	}, 0.3)
 
 	-- Update countdown timer
@@ -186,7 +189,7 @@ function SmoothUI:CreateWindow(config)
 		Size = UDim2.fromOffset(650, 320),
 		Position = UDim2.fromScale(0.5, 0.5),
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Theme.Background,
+		BackgroundColor3 = ThemeColor.Background,
 		BorderSizePixel = 0
 	}, self.ScreenGui)
 
@@ -196,7 +199,7 @@ function SmoothUI:CreateWindow(config)
 	local Topbar = Create("Frame", {
 		Name = "Topbar",
 		Size = UDim2.new(1, 0, 0, 45),
-		BackgroundColor3 = Theme.Secondary,
+		BackgroundColor3 = ThemeColor.Secondary,
 		BorderSizePixel = 0
 	}, Main)
 
@@ -208,7 +211,7 @@ function SmoothUI:CreateWindow(config)
 		Size = UDim2.new(1, -32, 1, 0),
 		BackgroundTransparency = 1,
 		Text = toString(config.Title or "Smooth UI"),
-		TextColor3 = Theme.Text,
+		TextColor3 = ThemeColor.Text,
 		TextSize = 16,
 		Font = Enum.Font.GothamBold,
 		TextXAlignment = Enum.TextXAlignment.Left
@@ -218,7 +221,7 @@ function SmoothUI:CreateWindow(config)
 		Name = "WindowTitleBackground",
 		Position = UDim2.new(0, 0, 0, 16),
 		Size = UDim2.new(1.05, -32, 0.639999986, 0),
-		BackgroundColor3 = Theme.Secondary,
+		BackgroundColor3 = ThemeColor.Secondary,
 		BorderSizePixel = 0,
 		ZIndex = 0
 	}, Topbar)
@@ -262,7 +265,7 @@ function SmoothUI:CreateWindow(config)
 		Name = "Sidebar",
 		Position = UDim2.fromOffset(10, 55),
 		Size = UDim2.new(-0.0400066003, 135, 1, -65),
-		BackgroundColor3 = Theme.Secondary,
+		BackgroundColor3 = ThemeColor.Secondary,
 		BorderSizePixel = 0
 	}, Main)
 
@@ -294,10 +297,10 @@ function SmoothUI:CreateWindow(config)
 		local TabButton = Create("TextButton", {
 			Name = "TabButton_" .. toString(TabName),
 			Size = UDim2.new(0.993142382, 0, -0.027777778, 35),
-			BackgroundColor3 = Theme.Element,
+			BackgroundColor3 = ThemeColor.Element,
 			BackgroundTransparency = 1,
 			Text = toString(TabName or "Tab"),
-			TextColor3 = Theme.Muted,
+			TextColor3 = ThemeColor.PureWhite,
 			TextSize = 14,
 			Font = Enum.Font.GothamMedium,
 			AutoButtonColor = false,
@@ -318,7 +321,7 @@ function SmoothUI:CreateWindow(config)
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			ScrollBarThickness = 2,
-			ScrollBarImageColor3 = Theme.Accent,
+			ScrollBarImageColor3 = ThemeColor.Accent,
 			CanvasSize = UDim2.new(),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			Visible = false
@@ -327,13 +330,16 @@ function SmoothUI:CreateWindow(config)
 		Create("UIListLayout", {
 			Name = "PageListLayout",
 			Padding = UDim.new(0, 8),
-			SortOrder = Enum.SortOrder.LayoutOrder
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center
 		}, Page)
 
 		Create("UIPadding", {
 			Name = "PagePadding",
 			PaddingTop = UDim.new(0, 3),
-			PaddingRight = UDim.new(0, 5)
+			PaddingRight = UDim.new(0, 10),
+			PaddingBottom = UDim.new(1, 0),
+			PaddingLeft = UDim.new(0, 5)
 		}, Page)
 
 		function Tab:Select()
@@ -341,7 +347,7 @@ function SmoothUI:CreateWindow(config)
 				other.Page.Visible = false
 				Tween(other.Button, {
 					BackgroundTransparency = 1,
-					TextColor3 = Theme.Muted
+					TextColor3 = ThemeColor.PureWhite
 				})
 			end
 
@@ -349,8 +355,8 @@ function SmoothUI:CreateWindow(config)
 
 			Tween(TabButton, {
 				BackgroundTransparency = 0,
-				BackgroundColor3 = Theme.Accent,
-				TextColor3 = Theme.Text
+				BackgroundColor3 = ThemeColor.Accent,
+				TextColor3 = ThemeColor.Text
 			})
 		end
 
@@ -368,7 +374,7 @@ function SmoothUI:CreateWindow(config)
 				Position = UDim2.fromOffset(2, 5),
 				BackgroundTransparency = 1,
 				Text = "▼",
-				TextColor3 = Theme.Accent,
+				TextColor3 = ThemeColor.Accent,
 				TextSize = 12,
 				Font = Enum.Font.GothamBold,
 				TextXAlignment = Enum.TextXAlignment.Center,
@@ -382,7 +388,7 @@ function SmoothUI:CreateWindow(config)
 				Position = UDim2.fromOffset(24, 0),
 				BackgroundTransparency = 1,
 				Text = toString(name),
-				TextColor3 = Theme.Accent,
+				TextColor3 = ThemeColor.Accent,
 				TextSize = 13,
 				Font = Enum.Font.GothamBold,
 				TextXAlignment = Enum.TextXAlignment.Left
@@ -402,7 +408,8 @@ function SmoothUI:CreateWindow(config)
 			Create("UIListLayout", {
 				Name = "SectionElementsLayout",
 				Padding = UDim.new(0, 8),
-				SortOrder = Enum.SortOrder.LayoutOrder
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center
 			}, ElementsContainer)
 
 			local expanded = true
@@ -432,8 +439,8 @@ function SmoothUI:CreateWindow(config)
 				CreateElement = function(height, elementName)
 					return Create("Frame", {
 						Name = elementName or "Element",
-						Size = UDim2.new(1, -5, 0, height),
-						BackgroundColor3 = Theme.Secondary,
+						Size = UDim2.new(1, -11, 0, height),
+						BackgroundColor3 = ThemeColor.Secondary,
 						BorderSizePixel = 0
 					}, ElementsContainer)
 				end,
@@ -446,25 +453,24 @@ function SmoothUI:CreateWindow(config)
 			function sectionAPI:CreateButton(config)
 				local Button = self.CreateElement(40, "Button_" .. toString(config.Name or "Button"))
 				Corner(Button, 8)
-				Stroke(Button, Theme.Border, 0.5)
 
 				local Text = Create("TextButton", {
 					Name = "ButtonLabel",
 					Size = UDim2.fromScale(1, 1),
 					BackgroundTransparency = 1,
 					Text = toString(config.Name or "Button"),
-					TextColor3 = Theme.Text,
+					TextColor3 = ThemeColor.Text,
 					TextSize = 13,
 					Font = Enum.Font.GothamMedium,
 					AutoButtonColor = false
 				}, Button)
 
 				Text.MouseEnter:Connect(function()
-					Tween(Button, {BackgroundColor3 = Theme.Element})
+					Tween(Button, {BackgroundColor3 = ThemeColor.Element})
 				end)
 
 				Text.MouseLeave:Connect(function()
-					Tween(Button, {BackgroundColor3 = Theme.Secondary})
+					Tween(Button, {BackgroundColor3 = ThemeColor.Secondary})
 				end)
 
 				Text.MouseButton1Click:Connect(function()
@@ -474,10 +480,97 @@ function SmoothUI:CreateWindow(config)
 				end)
 			end
 
+            function sectionAPI:CreateKeybind(config)
+                local Keybind = self.CreateElement(40, "Keybind_" .. toString(config.Name or "Keybind"))
+                Corner(Keybind, 8)
+
+                local CurrentKey = config.Key or Enum.KeyCode.RightShift
+                local WaitingForInput = false
+
+                local Label = Create("TextLabel", {
+                    Name = "KeybindLabel",
+                    Position = UDim2.fromOffset(12, 0),
+                    Size = UDim2.new(1, -100, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = toString(config.Name or "Keybind"),
+                    TextColor3 = ThemeColor.Text,
+                    TextSize = 13,
+                    Font = Enum.Font.GothamMedium,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                }, Keybind)
+
+                local KeyButton = Create("TextButton", {
+                    Name = "KeybindButton",
+                    Size = UDim2.fromOffset(80, 24),
+                    Position = UDim2.new(1, -92, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundColor3 = ThemeColor.Element,
+                    Text = CurrentKey.Name,
+                    TextColor3 = ThemeColor.Text,
+                    TextSize = 11,
+                    Font = Enum.Font.GothamMedium,
+                    AutoButtonColor = false,
+                    TextTruncate = Enum.TextTruncate.AtEnd
+                }, Keybind)
+
+                Corner(KeyButton, 6)
+                Stroke(KeyButton, ThemeColor.Border, 0.5)
+
+                local function UpdateDisplay()
+                    KeyButton.Text = CurrentKey.Name
+                end
+
+                local function Set(key, fireCallback)
+                    CurrentKey = key
+                    UpdateDisplay()
+                    if fireCallback and config.Callback then
+                        config.Callback(CurrentKey)
+                    end
+                end
+
+                KeyButton.MouseButton1Click:Connect(function()
+                    WaitingForInput = true
+                    KeyButton.Text = "..."
+                    KeyButton.TextColor3 = ThemeColor.Accent
+                    Stroke(KeyButton, ThemeColor.Accent, 0)
+                end)
+
+                UserInputService.InputBegan:Connect(function(input, processed)
+                    if WaitingForInput and not processed then
+                        if input.UserInputType == Enum.UserInputType.Keyboard then
+                            WaitingForInput = false
+                            Set(input.KeyCode)
+                            KeyButton.TextColor3 = ThemeColor.Text
+                            Stroke(KeyButton, ThemeColor.Border, 0.5)
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton1
+                            or input.UserInputType == Enum.UserInputType.MouseButton2
+                            or input.UserInputType == Enum.UserInputType.MouseButton3 then
+                            WaitingForInput = false
+                            Set(input.UserInputType)
+                            KeyButton.TextColor3 = ThemeColor.Text
+                            Stroke(KeyButton, ThemeColor.Border, 0.5)
+                        end
+                    elseif not WaitingForInput and not processed then
+                        if input.KeyCode == CurrentKey or input.UserInputType == CurrentKey then
+                            if config.Callback then
+                                task.spawn(config.Callback, CurrentKey)
+                            end
+                        end
+                    end
+                end)
+
+                local keybindAPI = {
+                    Set = Set,
+                    Get = function() return CurrentKey end,
+                    WaitingForInput = function() return WaitingForInput end
+                }
+
+                return keybindAPI
+            end
+
 			function sectionAPI:CreateToggle(config)
 				local Toggle = self.CreateElement(40, "Toggle_" .. toString(config.Name or "Toggle"))
 				Corner(Toggle, 8)
-				Stroke(Toggle, Theme.Border, 0.5)
 
 				local Enabled = config.CurrentValue or false
 
@@ -487,7 +580,7 @@ function SmoothUI:CreateWindow(config)
 					Size = UDim2.new(1, -65, 1, 0),
 					BackgroundTransparency = 1,
 					Text = toString(config.Name or "Toggle"),
-					TextColor3 = Theme.Text,
+					TextColor3 = ThemeColor.Text,
 					TextSize = 13,
 					Font = Enum.Font.GothamMedium,
 					TextXAlignment = Enum.TextXAlignment.Left
@@ -498,11 +591,11 @@ function SmoothUI:CreateWindow(config)
 					Size = UDim2.fromOffset(36, 19),
 					Position = UDim2.new(1, -48, 0.5, 0),
 					AnchorPoint = Vector2.new(0, 0.5),
-					BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
+					BackgroundColor3 = Enabled and ThemeColor.Accent or ThemeColor.Element
 				}, Toggle)
 
 				Corner(Switch, 20)
-				Stroke(Switch, Theme.Border, 0.5)
+				Stroke(Switch, ThemeColor.Border, 0.5)
 
 				local Knob = Create("Frame", {
 					Name = "ToggleKnob",
@@ -514,13 +607,13 @@ function SmoothUI:CreateWindow(config)
 				}, Switch)
 
 				Corner(Knob, 20)
-				Stroke(Knob, Theme.Border, 0.3)
+				Stroke(Knob, ThemeColor.Border, 0.3)
 
 				local function Set(value)
 					Enabled = value
 
 					Tween(Switch, {
-						BackgroundColor3 = Enabled and Theme.Accent or Theme.Element
+						BackgroundColor3 = Enabled and ThemeColor.Accent or ThemeColor.Element
 					})
 
 					-- Both states use Y scale 0.5 with AnchorPoint (0, 0.5) for perfect vertical centering
@@ -556,7 +649,6 @@ function SmoothUI:CreateWindow(config)
 			function sectionAPI:CreateSlider(config)
 				local Frame = self.CreateElement(65, "Slider_" .. toString(config.Name or "Slider"))
 				Corner(Frame, 8)
-				Stroke(Frame, Theme.Border, 0.5)
 
 				local Min = config.Range and config.Range[1] or 0
 				local Max = config.Range and config.Range[2] or 100
@@ -567,7 +659,7 @@ function SmoothUI:CreateWindow(config)
 					Size = UDim2.new(1, -24, 0, 20),
 					BackgroundTransparency = 1,
 					Text = toString(config.Name or "Slider") .. ": " .. toString(Value),
-					TextColor3 = Theme.Text,
+					TextColor3 = ThemeColor.Text,
 					TextSize = 13,
 					Font = Enum.Font.GothamMedium,
 					TextXAlignment = Enum.TextXAlignment.Left
@@ -577,20 +669,20 @@ function SmoothUI:CreateWindow(config)
 					Name = "SliderBar",
 					Position = UDim2.fromOffset(12, 29),
 					Size = UDim2.new(1, -24, 0, 5),
-					BackgroundColor3 = Theme.Element
+					BackgroundColor3 = ThemeColor.Element
 				}, Frame)
 
 				Corner(Bar, 10)
-				Stroke(Bar, Theme.Border, 0.5)
+				Stroke(Bar, ThemeColor.Border, 0.5)
 
 				local Fill = Create("Frame", {
 					Name = "SliderFill",
 					Size = UDim2.new((Value - Min) / (Max - Min), 0, 1, 0),
-					BackgroundColor3 = Theme.Accent
+					BackgroundColor3 = ThemeColor.Accent
 				}, Bar)
 
 				Corner(Fill, 10)
-				Stroke(Fill, Theme.Accent, 0.3)
+				Stroke(Fill, ThemeColor.Accent, 0.3)
 
 				local function Set(value)
 					Value = math.clamp(value, Min, Max)
@@ -654,7 +746,6 @@ function SmoothUI:CreateWindow(config)
 			function sectionAPI:CreateTextbox(config)
 				local Frame = self.CreateElement(65, "Textbox_" .. toString(config.Name or "Textbox"))
 				Corner(Frame, 8)
-				Stroke(Frame, Theme.Border, 0.5)
 
 				Create("TextLabel", {
 					Name = "TextboxLabel",
@@ -662,7 +753,7 @@ function SmoothUI:CreateWindow(config)
 					Size = UDim2.new(1, -24, 0, 20),
 					BackgroundTransparency = 1,
 					Text = toString(config.Name or "Textbox"),
-					TextColor3 = Theme.Text,
+					TextColor3 = ThemeColor.Text,
 					TextSize = 13,
 					Font = Enum.Font.GothamMedium,
 					TextXAlignment = Enum.TextXAlignment.Left
@@ -672,18 +763,18 @@ function SmoothUI:CreateWindow(config)
 					Name = "TextboxInput",
 					Position = UDim2.fromOffset(10, 29),
 					Size = UDim2.new(1, -20, 0, 28),
-					BackgroundColor3 = Theme.Element,
+					BackgroundColor3 = ThemeColor.Element,
 					Text = "",
 					PlaceholderText = config.PlaceholderText or "Enter text...",
-					TextColor3 = Theme.Text,
-					PlaceholderColor3 = Theme.Muted,
+					TextColor3 = ThemeColor.Text,
+					PlaceholderColor3 = ThemeColor.Muted,
 					TextSize = 12,
 					Font = Enum.Font.Gotham,
 					ClearTextOnFocus = false
 				}, Frame)
 
 				Corner(Input, 6)
-				Stroke(Input, Theme.Border, 0.5)
+				Stroke(Input, ThemeColor.Border, 0.5)
 
 				Input.FocusLost:Connect(function()
 					if config.Callback then
@@ -693,6 +784,397 @@ function SmoothUI:CreateWindow(config)
 
 				return Input
 			end
+
+			function SmoothUI:Prompt(config)
+				config = config or {}
+				local Title = toString(config.Title or "Prompt")
+				local Message = toString(config.Message or "")
+				local Buttons = config.Buttons or {{Text = "OK", Callback = function() end}}
+				
+				local Overlay = Create("TextButton", {
+					Name = "PromptOverlay",
+					Size = UDim2.fromScale(1, 1),
+					Position = UDim2.fromScale(0, 0),
+					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+					BackgroundTransparency = 1,  -- start invisible for fade-in
+					Text = "",
+					AutoButtonColor = false,
+					ZIndex = 100,
+				}, self.ScreenGui)
+
+				-- Dialog frame
+				local Dialog = Create("Frame", {
+					Name = "PromptDialog",
+					Size = UDim2.fromOffset(360, 170),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = ThemeColor.Background,
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,  -- start invisible for fade-in
+					ZIndex = 101
+				}, Overlay)
+
+				Corner(Dialog, 12)
+				Stroke(Dialog, ThemeColor.Accent, 0.2)
+
+				-- Title
+				Create("TextLabel", {
+					Name = "PromptTitle",
+					Position = UDim2.fromOffset(20, 16),
+					Size = UDim2.new(1, -40, 0, 28),
+					BackgroundTransparency = 1,
+					Text = Title,
+					TextColor3 = ThemeColor.Text,
+					TextSize = 16,
+					Font = Enum.Font.GothamBold,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 102
+				}, Dialog)
+
+				-- Message
+				Create("TextLabel", {
+					Name = "PromptMessage",
+					Position = UDim2.fromOffset(20, 50),
+					Size = UDim2.new(1, -40, 0, 60),
+					BackgroundTransparency = 1,
+					Text = Message,
+					TextColor3 = ThemeColor.Muted,
+					TextSize = 13,
+					Font = Enum.Font.Gotham,
+					TextWrapped = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					ZIndex = 102
+				}, Dialog)
+
+				-- Button container (bottom-right)
+				local ButtonContainer = Create("Frame", {
+					Name = "ButtonContainer",
+					Position = UDim2.new(1, -20, 1, -16),
+					AnchorPoint = Vector2.new(1, 1),
+					Size = UDim2.new(1, -40, 0, 36),
+					BackgroundTransparency = 1,
+					ZIndex = 102
+				}, Dialog)
+
+				Create("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					HorizontalAlignment = Enum.HorizontalAlignment.Right,
+					Padding = UDim.new(0, 8),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				}, ButtonContainer)
+
+				local dismissed = false
+
+				local function Close()
+					if dismissed then return end
+					dismissed = true
+					
+					-- Fade out only (no position shift)
+					Tween(Overlay, {BackgroundTransparency = 1}, 0.15)
+					Tween(Dialog, {BackgroundTransparency = 1}, 0.15)
+					
+					task.wait(0.2)
+					Overlay:Destroy()
+				end
+
+				-- Create buttons (reverse order for right-to-left layout)
+				for i = #Buttons, 1, -1 do
+					local btnConfig = Buttons[i]
+					local isPrimary = btnConfig.Primary or (i == #Buttons and #Buttons == 1)
+					
+					local Btn = Create("TextButton", {
+						Name = "PromptButton_" .. toString(btnConfig.Text or "Btn"),
+						Size = UDim2.fromOffset(88, 36),
+						BackgroundColor3 = isPrimary and ThemeColor.Accent or ThemeColor.Element,
+						Text = toString(btnConfig.Text or "Button"),
+						TextColor3 = ThemeColor.Text,
+						TextSize = 13,
+						Font = Enum.Font.GothamMedium,
+						AutoButtonColor = false,
+						LayoutOrder = i,
+						ZIndex = 102
+					}, ButtonContainer)
+
+					Corner(Btn, 8)
+					Stroke(Btn, isPrimary and ThemeColor.Accent or ThemeColor.Border, isPrimary and 0.3 or 0.5)
+
+					Btn.MouseEnter:Connect(function()
+						Tween(Btn, {BackgroundColor3 = isPrimary 
+							and ThemeColor.Accent:Lerp(Color3.new(1,1,1), 0.15) 
+							or ThemeColor.Secondary})
+					end)
+					Btn.MouseLeave:Connect(function()
+						Tween(Btn, {BackgroundColor3 = isPrimary and ThemeColor.Accent or ThemeColor.Element})
+					end)
+
+					Btn.MouseButton1Click:Connect(function()
+						if btnConfig.Callback then
+							task.spawn(btnConfig.Callback)
+						end
+						Close()
+					end)
+				end
+
+				-- Fade in animation
+				Tween(Overlay, {BackgroundTransparency = 0.4}, 0.15)
+				Tween(Dialog, {BackgroundTransparency = 0}, 0.2)
+
+				-- Optional: close on overlay click
+				Overlay.MouseButton1Click:Connect(function()
+					if config.CloseOnOverlayClick ~= false then
+						Close()
+					end
+				end)
+
+				return {Close = Close}
+			end
+
+			function SmoothUI:InputPrompt(config)
+				config = config or {}
+				local Title = toString(config.Title or "Input")
+				local Message = toString(config.Message or "")
+				local Placeholder = toString(config.Placeholder or "Enter text...")
+				local DefaultText = toString(config.DefaultText or "")
+				local Buttons = config.Buttons or {
+					{Text = "Cancel"},
+					{Text = "Confirm", Primary = true}
+				}
+				local AutoFocus = config.AutoFocus ~= false  -- default true, set false to disable
+				local SubmitOnEnter = config.SubmitOnEnter == true  -- default FALSE, opt-in
+				
+				local Overlay = Create("TextButton", {
+					Name = "InputPromptOverlay",
+					Size = UDim2.fromScale(1, 1),
+					Position = UDim2.fromScale(0, 0),
+					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+					BackgroundTransparency = 1,
+					Text = "",
+					AutoButtonColor = false,
+					ZIndex = 100,
+				}, self.ScreenGui)
+
+				local Dialog = Create("Frame", {
+					Name = "InputPromptDialog",
+					Size = UDim2.fromOffset(360, 200),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = ThemeColor.Background,
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,
+					ZIndex = 101
+				}, Overlay)
+
+				Corner(Dialog, 12)
+				Stroke(Dialog, ThemeColor.Accent, 0.2)
+
+				Create("TextLabel", {
+					Position = UDim2.fromOffset(20, 16),
+					Size = UDim2.new(1, -40, 0, 28),
+					BackgroundTransparency = 1,
+					Text = Title,
+					TextColor3 = ThemeColor.Text,
+					TextSize = 16,
+					Font = Enum.Font.GothamBold,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 102
+				}, Dialog)
+
+				Create("TextLabel", {
+					Position = UDim2.fromOffset(20, 50),
+					Size = UDim2.new(1, -40, 0, 40),
+					BackgroundTransparency = 1,
+					Text = Message,
+					TextColor3 = ThemeColor.Muted,
+					TextSize = 13,
+					Font = Enum.Font.Gotham,
+					TextWrapped = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					ZIndex = 102
+				}, Dialog)
+
+				local Input = Create("TextBox", {
+					Name = "InputPromptBox",
+					Position = UDim2.fromOffset(20, 100),
+					Size = UDim2.new(1, -40, 0, 40),
+					BackgroundColor3 = ThemeColor.Element,
+					Text = DefaultText,
+					PlaceholderText = Placeholder,
+					PlaceholderColor3 = ThemeColor.Muted,
+					TextColor3 = ThemeColor.Text,
+					TextSize = 13,
+					Font = Enum.Font.Gotham,
+					ClearTextOnFocus = false,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 102
+				}, Dialog)
+
+				Corner(Input, 8)
+				Stroke(Input, ThemeColor.Border, 0.5)
+				Create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12)}, Input)
+
+				local ButtonContainer = Create("Frame", {
+					Name = "ButtonContainer",
+					Position = UDim2.new(1, -20, 1, -16),
+					AnchorPoint = Vector2.new(1, 1),
+					Size = UDim2.new(1, -40, 0, 36),
+					BackgroundTransparency = 1,
+					ZIndex = 102
+				}, Dialog)
+
+				Create("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					HorizontalAlignment = Enum.HorizontalAlignment.Right,
+					Padding = UDim.new(0, 8),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				}, ButtonContainer)
+
+				local dismissed = false
+
+				local function Close()
+					if dismissed then return end
+					dismissed = true
+					
+					-- Fade out smoothly (slightly longer for less jank)
+					Tween(Overlay, {BackgroundTransparency = 1}, 0.2)
+					Tween(Dialog, {BackgroundTransparency = 1}, 0.2)
+					
+					task.wait(0.25)
+					Overlay:Destroy()
+				end
+
+				-- Create buttons (reverse for right-to-left)
+				for i = #Buttons, 1, -1 do
+					local btnConfig = Buttons[i]
+					local isPrimary = btnConfig.Primary or (i == #Buttons and #Buttons == 1)
+					
+					local Btn = Create("TextButton", {
+						Name = "InputPromptButton_" .. toString(btnConfig.Text or "Btn"),
+						Size = UDim2.fromOffset(88, 36),
+						BackgroundColor3 = isPrimary and ThemeColor.Accent or ThemeColor.Element,
+						Text = toString(btnConfig.Text or "Button"),
+						TextColor3 = ThemeColor.Text,
+						TextSize = 13,
+						Font = Enum.Font.GothamMedium,
+						AutoButtonColor = false,
+						LayoutOrder = i,
+						ZIndex = 102
+					}, ButtonContainer)
+
+					Corner(Btn, 8)
+					Stroke(Btn, isPrimary and ThemeColor.Accent or ThemeColor.Border, isPrimary and 0.3 or 0.5)
+
+					Btn.MouseEnter:Connect(function()
+						Tween(Btn, {BackgroundColor3 = isPrimary 
+							and ThemeColor.Accent:Lerp(Color3.new(1,1,1), 0.12) 
+							or ThemeColor.Secondary})
+					end)
+					Btn.MouseLeave:Connect(function()
+						Tween(Btn, {BackgroundColor3 = isPrimary and ThemeColor.Accent or ThemeColor.Element})
+					end)
+
+					Btn.MouseButton1Click:Connect(function()
+						if btnConfig.Callback then
+							task.spawn(btnConfig.Callback, Input.Text)
+						end
+						Close()
+					end)
+				end
+
+				-- Enter key submits ONLY if explicitly enabled (default: false)
+				if SubmitOnEnter then
+					Input.FocusLost:Connect(function(enterPressed)
+						if enterPressed and not dismissed then
+							local primaryBtn = Buttons[#Buttons]
+							if primaryBtn and primaryBtn.Callback then
+								task.spawn(primaryBtn.Callback, Input.Text)
+							end
+							Close()
+						end
+					end)
+				end
+
+				-- Optional auto-focus (default: true, set AutoFocus=false to disable)
+				if AutoFocus then
+					-- Defer one frame so the dialog is fully rendered first (reduces stiffness)
+					task.defer(function()
+						if not dismissed then
+							Input:CaptureFocus()
+						end
+					end)
+				end
+
+				-- SMOOTHER ANIMATION: render one frame first, THEN animate
+				-- This prevents the "freeze" on first frame
+				task.defer(function()
+					if dismissed then return end
+					-- Fade in with slightly longer duration + Quart easing (default)
+					Tween(Overlay, {BackgroundTransparency = 0.35}, 0.22)
+					Tween(Dialog, {BackgroundTransparency = 0}, 0.22)
+				end)
+
+				Overlay.MouseButton1Click:Connect(function()
+					if config.CloseOnOverlayClick ~= false then
+						Close()
+					end
+				end)
+
+				return {Close = Close, GetText = function() return Input.Text end}
+			end
+
+            function sectionAPI:CreateLabel(config)
+                config = config or {}
+                local Label = self.CreateElement(config.Height or 25, "Label_" .. toString(config.Name or "Label"))
+                Label.BackgroundTransparency = 1  -- Transparent background by default
+
+                local Text = Create("TextLabel", {
+                    Name = "LabelText",
+                    Size = UDim2.fromScale(1, 1),
+                    Position = UDim2.fromOffset(config.Padding or 12, 0),
+                    BackgroundTransparency = 1,
+                    Text = toString(config.Text or config.Name or "Label"),
+                    TextColor3 = config.TextColor3 or ThemeColor.Text,
+                    TextSize = config.TextSize or 13,
+                    Font = config.Font or Enum.Font.GothamMedium,
+                    TextXAlignment = config.TextXAlignment or Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    TextWrapped = config.TextWrapped or false,
+                    RichText = config.RichText or false,
+                    TextTruncate = config.TextTruncate or Enum.TextTruncate.None
+                }, Label)
+
+                local labelAPI = {
+                    Set = function(text)
+                        Text.Text = toString(text)
+                    end,
+                    Get = function()
+                        return Text.Text
+                    end,
+                    SetColor = function(color)
+                        Text.TextColor3 = color
+                    end,
+                    SetSize = function(size)
+                        Text.TextSize = size
+                    end,
+                    SetAlignment = function(xAlign, yAlign)
+                        Text.TextXAlignment = xAlign or Text.TextXAlignment
+                        Text.TextYAlignment = yAlign or Text.TextYAlignment
+                    end,
+                    Destroy = function()
+                        Label:Destroy()
+                    end
+                }
+
+                -- Optional: background color if specified
+                if config.BackgroundColor3 then
+                    Label.BackgroundTransparency = 0
+                    Label.BackgroundColor3 = config.BackgroundColor3
+                    Corner(Label, config.CornerRadius or 6)
+                end
+
+                return labelAPI
+            end
 
 			function sectionAPI:CreateDropdown(config)
 					config = config or {}
@@ -748,9 +1230,9 @@ function SmoothUI:CreateWindow(config)
 
 					-- Selection highlight color (lighter accent for visibility)
 					local SelectionHighlight = Color3.fromRGB(
-						math.min(255, math.floor(Theme.Accent.R * 255 + 60)),
-						math.min(255, math.floor(Theme.Accent.G * 255 + 60)),
-						math.min(255, math.floor(Theme.Accent.B * 255 + 60))
+						math.min(255, math.floor(ThemeColor.Accent.R * 255 + 60)),
+						math.min(255, math.floor(ThemeColor.Accent.G * 255 + 60)),
+						math.min(255, math.floor(ThemeColor.Accent.B * 255 + 60))
 					)
 
 					-- Layout constants
@@ -767,7 +1249,7 @@ function SmoothUI:CreateWindow(config)
 
 					-- Main element frame - goes in the section's ElementsContainer
 					local ElementFrame = self.CreateElement(collapsedHeight, "Dropdown_" .. tostring(config.Name or "Dropdown"))
-					ElementFrame.BackgroundColor3 = Theme.Secondary
+					ElementFrame.BackgroundColor3 = ThemeColor.Secondary
 					ElementFrame.ClipsDescendants = true
 					Corner(ElementFrame, 8)
 
@@ -778,7 +1260,7 @@ function SmoothUI:CreateWindow(config)
 						Size = UDim2.new(1, -24, 0, LABEL_HEIGHT),
 						BackgroundTransparency = 1,
 						Text = config.Name or "Dropdown",
-						TextColor3 = Theme.Text,
+						TextColor3 = ThemeColor.Text,
 						TextSize = 13,
 						Font = Enum.Font.GothamMedium,
 						TextXAlignment = Enum.TextXAlignment.Left
@@ -789,9 +1271,9 @@ function SmoothUI:CreateWindow(config)
 						Name = "DropdownButton",
 						Position = UDim2.fromOffset(10, LABEL_HEIGHT + LABEL_GAP),
 						Size = UDim2.new(1, -20, 0, BUTTON_HEIGHT),
-						BackgroundColor3 = Theme.Element,
+						BackgroundColor3 = ThemeColor.Element,
 						Text = "",
-						TextColor3 = Theme.Text,
+						TextColor3 = ThemeColor.Text,
 						TextSize = 11,
 						Font = Enum.Font.Gotham,
 						AutoButtonColor = false,
@@ -801,7 +1283,7 @@ function SmoothUI:CreateWindow(config)
 					}, ElementFrame)
 
 					Corner(Button, 6)
-					Stroke(Button, Theme.Border, 0.5)
+					Create("UIPadding", {PaddingLeft = UDim.new(0, 12)}, Button)
 
 					-- Arrow indicator
 					local Arrow = Create("TextLabel", {
@@ -811,7 +1293,7 @@ function SmoothUI:CreateWindow(config)
 						AnchorPoint = Vector2.new(0, 0.5),
 						BackgroundTransparency = 1,
 						Text = "▼",
-						TextColor3 = Theme.Muted,
+						TextColor3 = ThemeColor.Muted,
 						TextSize = 10,
 						Font = Enum.Font.GothamBold,
 						ZIndex = 2
@@ -951,7 +1433,7 @@ function SmoothUI:CreateWindow(config)
 							Size = UDim2.new(1, 0, 0, OPTION_HEIGHT),
 							BackgroundTransparency = 1,
 							Text = "  " .. tostring(optName),
-							TextColor3 = Theme.Text,
+							TextColor3 = ThemeColor.Text,
 							TextSize = 11,
 							Font = Enum.Font.Gotham,
 							AutoButtonColor = false,
@@ -982,7 +1464,7 @@ function SmoothUI:CreateWindow(config)
 						OptButton.MouseEnter:Connect(function()
 							local isSel = MultiSelect and CurrentOption[optValue] == true or CurrentOption == optValue
 							if not isSel then
-								Tween(OptButton, {BackgroundTransparency = 0.9, BackgroundColor3 = Theme.Accent})
+								Tween(OptButton, {BackgroundTransparency = 0.9, BackgroundColor3 = ThemeColor.Accent})
 							end
 						end)
 						OptButton.MouseLeave:Connect(function()
@@ -1184,22 +1666,27 @@ function SmoothUI.new()
 	self.ScreenGui = Create("ScreenGui", {
 		Name = "SmoothUILibrary",
 		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		IgnoreGuiInset = true
 	}, PlayerGui)
 
 	return self
 end
 
-local Library = SmoothUI.new()
+local SmoothUI = SmoothUI.new()
 
-local Window = Library:CreateWindow({
+local Window = SmoothUI:CreateWindow({
     Title = "StarFall Hub v1.0"
 })
 
--- ============ MAIN TAB ============
+-- ----------------------------------------------------------------------------
+-- MAIN TAB
+-- ----------------------------------------------------------------------------
 local MainTab = Window:CreateTab("Main")
 
+-- General Section
 local General = MainTab:CreateSection("General")
+
 General:CreateButton({
     Name = "Rejoin",
     Callback = function()
@@ -1211,12 +1698,14 @@ General:CreateButton({
     Name = "Copy Discord",
     Callback = function()
         setclipboard("https://discord.gg/yourserver")
-        Library:Notify("Copied!", "Discord link in clipboard", 2)
+        SmoothUI:Notify("Copied!", "Discord link in clipboard", 2)
     end
 })
 
+-- Player Section
 local Player = MainTab:CreateSection("Player")
-local WS = Player:CreateSlider({
+
+Player:CreateSlider({
     Name = "WalkSpeed",
     Range = {16, 200},
     CurrentValue = 16,
@@ -1226,7 +1715,7 @@ local WS = Player:CreateSlider({
     end
 })
 
-local JP = Player:CreateSlider({
+Player:CreateSlider({
     Name = "JumpPower",
     Range = {50, 300},
     CurrentValue = 50,
@@ -1243,20 +1732,21 @@ Player:CreateButton({
     end
 })
 
-local Noclip = Player:CreateToggle({
+Player:CreateToggle({
     Name = "Noclip",
     CurrentValue = false,
     Callback = function(v) _G.Noclip = v end
 })
 
--- ============ COMBAT TAB ============
+-- ----------------------------------------------------------------------------
+-- COMBAT TAB
+-- ----------------------------------------------------------------------------
 local CombatTab = Window:CreateTab("Combat")
 
 local Aimbot = CombatTab:CreateSection("Aimbot")
 Aimbot:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Aimbot = v end})
 Aimbot:CreateToggle({Name = "Team Check", CurrentValue = true, Callback = function(v) _G.TeamCheck = v end})
 Aimbot:CreateToggle({Name = "Wall Check", CurrentValue = true, Callback = function(v) _G.WallCheck = v end})
-
 Aimbot:CreateSlider({Name = "FOV", Range = {10, 360}, CurrentValue = 90, Callback = function(v) _G.FOV = v end})
 Aimbot:CreateSlider({Name = "Smoothness", Range = {1, 20}, CurrentValue = 5, Callback = function(v) _G.Smooth = v end})
 
@@ -1264,7 +1754,9 @@ local Trigger = CombatTab:CreateSection("Triggerbot")
 Trigger:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Trigger = v end})
 Trigger:CreateSlider({Name = "Delay (ms)", Range = {0, 500}, CurrentValue = 50, Callback = function(v) _G.TriggerDelay = v end})
 
--- ============ VISUALS TAB ============
+-- ----------------------------------------------------------------------------
+-- VISUALS TAB
+-- ----------------------------------------------------------------------------
 local VisualsTab = Window:CreateTab("Visuals")
 
 local ESP = VisualsTab:CreateSection("ESP")
@@ -1274,25 +1766,25 @@ ESP:CreateToggle({Name = "Health", CurrentValue = false, Callback = function(v) 
 ESP:CreateToggle({Name = "Distance", CurrentValue = false, Callback = function(v) _G.DistESP = v end})
 ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 1000, Callback = function(v) _G.MaxDist = v end})
 
--- ============ STARTUP ============
-Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
+-- ----------------------------------------------------------------------------
+-- STARTUP & EXAMPLE ELEMENTS
+-- ----------------------------------------------------------------------------
+SmoothUI:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
 
--- ============ COMPLETE EXAMPLE (all element types) ============
-
--- Dropdown example (single select)
-local TargetPart = Player:CreateDropdown({
+-- Dropdown examples (single select)
+Player:CreateDropdown({
     Name = "Target Part",
     Options = {"Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"},
     CurrentOption = "Head",
     MultiSelect = false,
     Callback = function(selected)
         _G.TargetPart = selected
-        Library:Notify("Target Changed", "Now targeting: " .. selected, 2)
+        SmoothUI:Notify("Target Changed", "Now targeting: " .. selected, 2)
     end
 })
 
 -- Dropdown example (multi select)
-local MultiSelect = Player:CreateDropdown({
+Player:CreateDropdown({
     Name = "Multi Select",
     Options = {"Option A", "Option B", "Option C", "Option D"},
     CurrentOption = {},
@@ -1302,25 +1794,39 @@ local MultiSelect = Player:CreateDropdown({
         for k, v in pairs(selected) do
             if v then table.insert(names, k) end
         end
-        Library:Notify("Multi-Select", "Selected: " .. table.concat(names, ", "), 2)
+        SmoothUI:Notify("Multi-Select", "Selected: " .. table.concat(names, ", "), 2)
     end
 })
 
--- Dropdown example with Name/Value tables
-local CustomDropdown = Player:CreateDropdown({
+-- Dropdown with Name/Value tables
+Player:CreateDropdown({
     Name = "Custom Values",
     Options = {
         {Name = "Head", Value = "HeadPart"},
         {Name = "Torso", Value = "TorsoPart"},
         {Name = "HumanoidRootPart", Value = "HRP"},
     },
-    CurrentOption = "HeadPart",  -- Set by Value
+    CurrentOption = "HeadPart",
     MultiSelect = false,
     Callback = function(selected)
         _G.CustomValue = selected
         print("Custom dropdown selected:", selected)
     end
 })
+
+-- Keybind example
+local Keybind = Player:CreateKeybind({
+    Name = "Toggle UI",
+    Key = Enum.KeyCode.RightShift,
+    Callback = function(key)
+        print("Pressed:", key.Name)
+        Window:Toggle()
+    end
+})
+
+-- Programmatic keybind control (callback NOT fired)
+Keybind.Set(Enum.KeyCode.F1)
+print("Keybind set to:", Keybind.Get().Name)
 
 -- Textbox example
 Player:CreateTextbox({
@@ -1330,5 +1836,74 @@ Player:CreateTextbox({
         print("Searching for:", text)
     end
 })
+
+-- Label examples
+Player:CreateLabel({Text = "Simple Label"})
+
+Player:CreateLabel({
+    Text = "<font color='#825aff'>Colored</font> <b>Rich Text</b>",
+    RichText = true,
+    TextSize = 14,
+    TextColor3 = ThemeColor.Accent,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Height = 30
+})
+
+Player:CreateLabel({
+    Text = "Status: Active",
+    BackgroundColor3 = ThemeColor.Element,
+    TextColor3 = ThemeColor.Text,
+    Height = 28,
+    Padding = 8
+})
+
+-- Basic Prompt (unchanged API)
+SmoothUI:Prompt({
+    Title = "Confirm Reset",
+    Message = "This will reset your character. Continue?",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Reset", Primary = true, Callback = function() 
+            game.Players.LocalPlayer:LoadCharacter() 
+        end}
+    }
+})
+
+-- Input Prompt (NEW - with real textbox)
+SmoothUI:InputPrompt({
+    Title = "Create Preset",
+    Message = "Enter a name for your new preset:",
+    Placeholder = "My Preset",
+    DefaultText = "Preset 1",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Create", Primary = true, Callback = function(name)
+            print("Creating preset:", name)
+            SmoothUI:Notify("Success", "Created: " .. name, 2)
+        end}
+    }
+})
+
+-- Input Prompt with validation
+SmoothUI:InputPrompt({
+    Title = "Set WalkSpeed",
+    Message = "Enter a value between 16 and 500:",
+    Placeholder = "16",
+    DefaultText = "16",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Apply", Primary = true, Callback = function(text)
+            local val = tonumber(text)
+            if val and val >= 16 and val <= 500 then
+                local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+                if hum then hum.WalkSpeed = val end
+                SmoothUI:Notify("Applied", "WalkSpeed set to " .. val, 2)
+            else
+                SmoothUI:Notify("Invalid", "Please enter a number 16-500", 3)
+            end
+        end}
+    }
+})
+
 
 return SmoothUI

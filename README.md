@@ -20,6 +20,10 @@ A lightweight, modern Roblox UI library with smooth animations, collapsible sect
 | **🎯 Smooth Animations** | Quart easing on all transitions (toggles, sliders, sections, notifications) |
 | **📦 Zero Dependencies** | Single file, no external requires |
 | **📋 Dropdown Selector** | Inline single/multi-select dropdowns that push elements down |
+| **⌨️ Keybind Picker** | Click to bind keys/mouse buttons, fires callback on press |
+| **🏷️ Label Element** | Rich text labels with customizable styling, colors, alignment |
+| **💬 Prompt Dialog** | Modal confirmations with custom buttons, full-screen backdrop |
+| **⌨️ Input Prompt** | Modal text input with placeholder, validation, mobile-optimized |
 
 ---
 
@@ -283,6 +287,112 @@ MyDropdown.Destroy()                 -- Clean up and remove dropdown
 
 ---
 
+### `Section:CreateKeybind(config)`
+Adds a keybind picker — click the button, press a key/mouse button to bind it. Fires callback when the bound key is pressed.
+
+```lua
+local MyKeybind = Section:CreateKeybind({
+    Name = "Toggle UI",
+    Key = Enum.KeyCode.RightShift,  -- optional, default: RightShift
+    Callback = function(key)
+        print("Pressed:", key.Name)
+        Window:Toggle()
+    end
+})
+```
+
+**Returns:** `{ Set = function(key, fireCallback?), Get = function() : EnumItem, WaitingForInput = function() : bool }`
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Name` | string | ✅ | Label next to keybind button |
+| `Key` | EnumItem | ❌ | Initial key (default: `Enum.KeyCode.RightShift`) |
+| `Callback` | function | ✅ | Called with `key` (EnumItem) when pressed |
+
+**Programmatic Control:**
+```lua
+MyKeybind:Set(Enum.KeyCode.F1)           -- Change key (callback NOT fired)
+MyKeybind:Set(Enum.KeyCode.F1, true)     -- Change key AND fire callback
+print(MyKeybind:Get().Name)              -- "F1"
+print(MyKeybind:WaitingForInput())       -- true/false (is user binding?)
+```
+
+**Features:**
+- Supports keyboard keys (`Enum.KeyCode`) and mouse buttons (`Enum.UserInputType`)
+- Visual feedback when waiting for input (shows "..." in accent color)
+- Callback only fires on actual key press, not on programmatic `Set()`
+- Optional `fireCallback` parameter on `Set()` to trigger callback manually
+
+---
+
+### `Section:CreateLabel(config)`
+Adds a customizable text label with rich text support, colors, alignment, and optional background.
+
+```lua
+local MyLabel = Section:CreateLabel({
+    Text = "Hello World",              -- or use Name as fallback
+    TextColor3 = ThemeColor.Text,      -- optional
+    TextSize = 13,                     -- optional
+    Font = Enum.Font.GothamMedium,     -- optional
+    TextXAlignment = Enum.TextXAlignment.Left,  -- optional
+    RichText = false,                  -- optional, enable rich text markup
+    Height = 25,                       -- optional
+    Padding = 12,                      -- optional, text padding from left
+    BackgroundColor3 = nil,            -- optional, adds background + rounded corners
+    CornerRadius = 6,                  -- optional, used with BackgroundColor3
+})
+```
+
+**Returns:** `{ Set = function(text), Get = function() : string, SetColor = function(color3), SetSize = function(number), SetAlignment = function(xAlign?, yAlign?), Destroy = function() }`
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Text` / `Name` | string | ✅ | Label text (Name used if Text not provided) |
+| `TextColor3` | Color3 | ❌ | Text color (default: `ThemeColor.Text`) |
+| `TextSize` | number | ❌ | Font size (default: `13`) |
+| `Font` | Enum.Font | ❌ | Font face (default: `GothamMedium`) |
+| `TextXAlignment` | Enum.TextXAlignment | ❌ | Horizontal alignment (default: `Left`) |
+| `TextWrapped` | boolean | ❌ | Wrap long text (default: `false`) |
+| `RichText` | boolean | ❌ | Enable `<font>`, `<b>`, `<i>` markup (default: `false`) |
+| `Height` | number | ❌ | Element height (default: `25`) |
+| `Padding` | number | ❌ | Left padding (default: `12`) |
+| `BackgroundColor3` | Color3 | ❌ | If set, adds colored background with rounded corners |
+| `CornerRadius` | number | ❌ | Corner radius for background (default: `6`) |
+
+**Usage Examples:**
+```lua
+-- Simple label
+local Label = Section:CreateLabel({Text = "Hello World"})
+
+-- Rich text with colors & bold
+local StyledLabel = Section:CreateLabel({
+    Text = "<font color='#825aff'>Colored</font> <b>Rich Text</b>",
+    RichText = true,
+    TextSize = 14,
+    TextColor3 = ThemeColor.Accent,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Height = 30
+})
+
+-- Label with background box
+local BoxedLabel = Section:CreateLabel({
+    Text = "Status: Active",
+    BackgroundColor3 = ThemeColor.Element,
+    TextColor3 = ThemeColor.Text,
+    Height = 28,
+    Padding = 8
+})
+
+-- Update programmatically
+Label.Set("New text")
+StyledLabel.SetColor(ThemeColor.Muted)
+StyledLabel.SetSize(16)
+StyledLabel.SetAlignment(Enum.TextXAlignment.Center)
+BoxedLabel.Destroy()
+```
+
+---
+
 ### Section Methods
 
 ```lua
@@ -323,6 +433,142 @@ Window:Destroy()   -- Clean up & remove UI
 ```
 
 ---
+
+### `Library:Prompt(config)`
+Shows a modal confirmation dialog with customizable buttons.
+
+```lua
+Library:Prompt({
+    Title = "Confirm Reset",
+    Message = "This will reset your character. Continue?",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Reset", Primary = true, Callback = function() 
+            game.Players.LocalPlayer:LoadCharacter() 
+        end}
+    }
+})
+```
+
+**Config Options:**
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `Title` | string | ❌ | `"Prompt"` | Dialog title |
+| `Message` | string | ❌ | `""` | Dialog message (supports wrapping) |
+| `Buttons` | table | ❌ | `{OK}` | Array of `{Text, Callback, Primary?}` |
+| `CloseOnOverlayClick` | boolean | ❌ | `true` | Click backdrop to dismiss |
+
+**Button Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Text` | string | ✅ | Button label |
+| `Callback` | function | ❌ | Called on click |
+| `Primary` | boolean | ❌ | Highlights button (accent color); auto-applied to last button if none set |
+
+**Returns:** `{ Close = function() }` — call `Close()` to dismiss programmatically.
+
+**Features:**
+- Full-screen backdrop with `IgnoreGuiInset` (covers top/bottom bars)
+- Smooth fade-in/fade-out animation (no slide)
+- Primary button highlighted in accent color
+- Click backdrop to dismiss (configurable)
+
+---
+
+### `Library:InputPrompt(config)`
+Shows a modal dialog with a text input field for collecting user input.
+
+```lua
+Library:InputPrompt({
+    Title = "Create Preset",
+    Message = "Enter a name for your new preset:",
+    Placeholder = "My Preset",
+    DefaultText = "Preset 1",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Create", Primary = true, Callback = function(name)
+            print("Creating preset:", name)
+        end}
+    }
+})
+```
+
+**Config Options:**
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `Title` | string | ❌ | `"Input"` | Dialog title |
+| `Message` | string | ❌ | `""` | Dialog message |
+| `Placeholder` | string | ❌ | `"Enter text..."` | TextBox placeholder |
+| `DefaultText` | string | ❌ | `""` | Pre-filled text |
+| `AutoFocus` | boolean | ❌ | `true` | Auto-focus textbox on open (set `false` for mobile) |
+| `SubmitOnEnter` | boolean | ❌ | `false` | Press Enter to submit (set `true` for desktop) |
+| `Buttons` | table | ❌ | Cancel/Confirm | Same as `Prompt` |
+| `CloseOnOverlayClick` | boolean | ❌ | `true` | Click backdrop to dismiss |
+
+**Returns:** `{ Close = function(), GetText = function() : string }`
+
+**Features:**
+- Real `TextBox` with placeholder, default text, padding
+- Mobile-friendly: `AutoFocus=false` prevents keyboard popup
+- `SubmitOnEnter=false` by default — no accidental submits on mobile
+- Enter key submits only when `SubmitOnEnter=true` (opt-in)
+- Smoother animation: defers one frame before fade-in to prevent stiffness
+- Returns `GetText()` for reading value before callback
+
+---
+
+### Complete Example (Prompt Usage)
+
+```lua
+-- Simple confirmation
+Library:Prompt({
+    Title = "Delete Config?",
+    Message = "This action cannot be undone.",
+    Buttons = {
+        {Text = "Keep It"},
+        {Text = "Delete", Primary = true, Callback = function() 
+            print("Deleted!") 
+        end}
+    }
+})
+
+-- Input with validation
+Library:InputPrompt({
+    Title = "Set WalkSpeed",
+    Message = "Enter a value between 16 and 500:",
+    Placeholder = "16",
+    DefaultText = "16",
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Apply", Primary = true, Callback = function(text)
+            local val = tonumber(text)
+            if val and val >= 16 and val <= 500 then
+                local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+                if hum then hum.WalkSpeed = val end
+                Library:Notify("Applied", "WalkSpeed set to " .. val, 2)
+            else
+                Library:Notify("Invalid", "Please enter a number 16-500", 3)
+            end
+        end}
+    }
+})
+
+-- Mobile-optimized input (no auto-focus, no enter submit)
+Library:InputPrompt({
+    Title = "Rename Preset",
+    Message = "Enter new name:",
+    Placeholder = "Preset Name",
+    AutoFocus = false,
+    SubmitOnEnter = false,
+    Buttons = {
+        {Text = "Cancel"},
+        {Text = "Save", Primary = true, Callback = function(name) ... end}
+    }
+})
+```
 
 ## 🎮 Complete Example
 
@@ -457,6 +703,36 @@ ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 100
 -- ============ STARTUP ============
 Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
 
+-- Keybind example (toggle UI with custom key)
+local Keybind = Player:CreateKeybind({
+    Name = "Toggle UI",
+    Key = Enum.KeyCode.RightShift,
+    Callback = function(key)
+        print("Pressed:", key.Name)
+        Window:Toggle()
+    end
+})
+
+-- Label examples
+local Label = Player:CreateLabel({Text = "Simple Label"})
+
+local StyledLabel = Player:CreateLabel({
+    Text = "<font color='#825aff'>Colored</font> <b>Rich Text</b>",
+    RichText = true,
+    TextSize = 14,
+    TextColor3 = ThemeColor.Accent,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Height = 30
+})
+
+local BoxedLabel = Player:CreateLabel({
+    Text = "Status: Active",
+    BackgroundColor3 = ThemeColor.Element,
+    TextColor3 = ThemeColor.Text,
+    Height = 28,
+    Padding = 8
+})
+
 -- Auto-collapse sections after 10 seconds
 task.delay(10, function()
     General:SetExpanded(false)
@@ -517,13 +793,7 @@ function sectionAPI:CreateColorPicker(config)
 end
 ```
 
-### Add a Keybind Picker
-```lua
-function sectionAPI:CreateKeybind(config)
-    -- Implementation here
-    -- config: {Name, Default = Enum.KeyCode, Callback}
-end
-```
+> **Note:** `CreateKeybind` and `CreateLabel` are now built-in! See API reference above.
 
 ---
 
