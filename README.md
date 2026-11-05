@@ -756,7 +756,8 @@ local Theme = {
     Accent     = Color3.fromRGB(130, 90, 255),  -- Purple accent (selection, slider fill)
     Text       = Color3.fromRGB(240, 240, 245), -- Primary text
     Muted      = Color3.fromRGB(145, 145, 160), -- Secondary text, placeholders
-    Border     = Color3.fromRGB(48, 48, 60)     -- Strokes, borders
+    Border     = Color3.fromRGB(48, 48, 60),     -- Strokes, borders
+    PureWhite = Color3.fromRGB(255, 255, 255)
 }
 ```
 
@@ -784,14 +785,6 @@ local Theme = {
 ---
 
 ## 🛠️ Extending the Library
-
-### Add a ColorPicker
-```lua
-function sectionAPI:CreateColorPicker(config)
-    -- Implementation here
-    -- config: {Name, Default = Color3, Callback}
-end
-```
 
 > **Note:** `CreateKeybind` and `CreateLabel` are now built-in! See API reference above.
 
