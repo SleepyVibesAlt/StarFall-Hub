@@ -1,6 +1,8 @@
 local SmoothUI = {}
 SmoothUI.__index = SmoothUI
 
+local logoAsset = getcustomasset("Logo-Left.png")
+
 -- Convert any value to a readable string (handles tables, nil, etc.)
 local function toString(value)
 	if value == nil then return "" end
@@ -30,7 +32,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
-
 
 local ThemeColor = {
 	Background = Color3.fromRGB(18, 18, 24),
@@ -340,6 +341,19 @@ function SmoothUI:CreateWindow(config)
 			PaddingRight = UDim.new(0, 10),
 			PaddingBottom = UDim.new(1, 0),
 			PaddingLeft = UDim.new(0, 5)
+		}, Page)
+
+		Create("ImageLabel", {
+			Name = "PageBackground",
+			Size = UDim2.fromScale(0.5, 1),
+			Position = UDim2.fromScale(0.5, 0),
+			BackgroundTransparency = 1,
+			Image = logoAsset, -- Use the downloaded image asset
+			ImageColor3 = ThemeColor.Secondary,
+			ImageTransparency = 0.5,
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(100, 100, 100, 100),
+			ZIndex = -1
 		}, Page)
 
 		function Tab:Select()

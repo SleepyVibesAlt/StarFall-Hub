@@ -71,76 +71,89 @@ end
 --// LOADING SCREEN
 local StarFallLoading = Instance.new("ScreenGui")
 StarFallLoading.Name = "StarFallLoading"
-StarFallLoading.Parent = PlayerGui
-StarFallLoading.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 StarFallLoading.ResetOnSpawn = false
+StarFallLoading.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+StarFallLoading.IgnoreGuiInset = true
+StarFallLoading.Parent = PlayerGui
 
 local LoadingFrame = Instance.new("Frame")
 LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Parent = StarFallLoading
+LoadingFrame.Size = UDim2.fromScale(1, 1)
 LoadingFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 LoadingFrame.BorderSizePixel = 0
-LoadingFrame.Size = UDim2.fromScale(1, 1)
+LoadingFrame.Parent = StarFallLoading
+
+local LoadingCorner = Instance.new("UICorner")
+LoadingCorner.CornerRadius = UDim.new(0, 0)
+LoadingCorner.Parent = LoadingFrame
 
 local LoadingTitle = Instance.new("TextLabel")
-LoadingTitle.Parent = LoadingFrame
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.Position = UDim2.new(0, 0, 0, 200)
+LoadingTitle.Name = "LoadingTitle"
 LoadingTitle.Size = UDim2.new(1, 0, 0, 40)
-LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.Position = UDim2.new(0, 0, 0, 200)
+LoadingTitle.BackgroundTransparency = 1
 LoadingTitle.Text = "StarFall Hub"
 LoadingTitle.TextColor3 = Color3.fromRGB(130, 90, 255)
 LoadingTitle.TextSize = 28
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextXAlignment = Enum.TextXAlignment.Center
+LoadingTitle.Parent = LoadingFrame
 
 local LoadingSubtitle = Instance.new("TextLabel")
-LoadingSubtitle.Parent = LoadingFrame
-LoadingSubtitle.BackgroundTransparency = 1
-LoadingSubtitle.Position = UDim2.new(0, 0, 0, 248)
+LoadingSubtitle.Name = "LoadingSubtitle"
 LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-LoadingSubtitle.Font = Enum.Font.Gotham
+LoadingSubtitle.Position = UDim2.new(0, 0, 0, 248)
+LoadingSubtitle.BackgroundTransparency = 1
 LoadingSubtitle.Text = "Initializing..."
 LoadingSubtitle.TextColor3 = Color3.fromRGB(145, 145, 160)
 LoadingSubtitle.TextSize = 14
+LoadingSubtitle.Font = Enum.Font.Gotham
+LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
+LoadingSubtitle.Parent = LoadingFrame
 
 local ProgressBar = Instance.new("Frame")
-ProgressBar.Parent = LoadingFrame
+ProgressBar.Name = "ProgressBar"
+ProgressBar.Size = UDim2.new(0.5, 0, 0, 6)
+ProgressBar.Position = UDim2.new(0.25, 0, 0, 280)
 ProgressBar.BackgroundColor3 = Color3.fromRGB(34, 34, 44)
 ProgressBar.BorderSizePixel = 0
-ProgressBar.Position = UDim2.new(0.25, 0, 0, 280)
-ProgressBar.Size = UDim2.new(0.5, 0, 0, 6)
+ProgressBar.Parent = LoadingFrame
 
 local ProgressCorner = Instance.new("UICorner")
 ProgressCorner.CornerRadius = UDim.new(1, 0)
 ProgressCorner.Parent = ProgressBar
 
 local ProgressFill = Instance.new("Frame")
-ProgressFill.Parent = ProgressBar
+ProgressFill.Name = "ProgressFill"
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
 ProgressFill.BackgroundColor3 = Color3.fromRGB(130, 90, 255)
 ProgressFill.BorderSizePixel = 0
-ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.Parent = ProgressBar
 
-local FillCorner = Instance.new("UICorner")
-FillCorner.CornerRadius = UDim.new(1, 0)
-FillCorner.Parent = ProgressFill
+local ProgressFillCorner = Instance.new("UICorner")
+ProgressFillCorner.CornerRadius = UDim.new(1, 0)
+ProgressFillCorner.Parent = ProgressFill
 
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 75, 235)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255))
+local ProgressGradient = Instance.new("UIGradient")
+ProgressGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 75, 235)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255)),
 })
-UIGradient.Parent = ProgressFill
+ProgressGradient.Parent = ProgressFill
 
 local StatusText = Instance.new("TextLabel")
-StatusText.Parent = LoadingFrame
-StatusText.BackgroundTransparency = 1
-StatusText.Position = UDim2.new(0, 0, 0, 292)
+StatusText.Name = "StatusText"
 StatusText.Size = UDim2.new(1, 0, 0, 20)
-StatusText.Font = Enum.Font.Gotham
+StatusText.Position = UDim2.new(0, 0, 0, 292)
+StatusText.BackgroundTransparency = 1
 StatusText.Text = "0%"
 StatusText.TextColor3 = Color3.fromRGB(145, 145, 160)
 StatusText.TextSize = 12
+StatusText.Font = Enum.Font.Gotham
+StatusText.TextXAlignment = Enum.TextXAlignment.Center
+StatusText.Parent = LoadingFrame
 
---// LOADING SCREEN FADE IN
+-- Fade the loading interface in instead of showing it abruptly.
 LoadingFrame.BackgroundTransparency = 1
 
 for _, object in ipairs(LoadingFrame:GetDescendants()) do
@@ -263,9 +276,8 @@ end
 -- Files are stored in Starfall_Hub/assets/.
 
 local AssetsToDownload = {
-    -- Example:
-    -- ["logo.png"] = "https://example.com/logo.png",
-    -- ["icon.png"] = "https://example.com/icon.png",
+    ["left_logo"] = "https://github.com/SleepyVibesAlt/StarFall-Hub/blob/main/assets/Logo-Left.png",
+    ["right_logo"] = "https://github.com/SleepyVibesAlt/StarFall-Hub/blob/main/assets/Logo-Right.png",
 }
 
 local function installAssets(forceUpdate)
