@@ -344,11 +344,14 @@ function SmoothUI:CreateWindow(config)
 		}, Page)
 
 		Create("ImageLabel", {
-			Name = "PageBackground",
-			Size = UDim2.fromScale(45, 45),
-			Position = UDim2.fromScale(0.925, 0),
+			Name = "LogoImage",
+			Size = UDim2.fromOffset(45, 45),
+			Position = UDim2.fromScale(0.924595296, 0),
 			BackgroundTransparency = 1,
-			Image = logoAsset, -- Use the downloaded image asset
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Image = logoAsset,
 			ZIndex = 1
 		}, Topbar)
 
