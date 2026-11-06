@@ -2,4 +2,3 @@ games/*.lua
 Raw/*.lua
 # Backup folder
 backup/
-.gitignore

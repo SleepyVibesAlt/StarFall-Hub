@@ -227,6 +227,19 @@ function SmoothUI:CreateWindow(config)
 		ZIndex = 0
 	}, Topbar)
 
+	-- Logo in Topbar (created once per window)
+	Create("ImageLabel", {
+		Name = "LogoImage",
+		Size = UDim2.fromOffset(45, 45),
+		Position = UDim2.fromScale(0.924595296, 0),
+		BackgroundTransparency = 1,
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BorderColor3 = Color3.fromRGB(0, 0, 0),
+		BorderSizePixel = 0,
+		Image = logoAsset,
+		ZIndex = 1
+	}, Topbar)
+
 	-- Dragging
 	local dragging = false
 	local dragStart, startPosition
@@ -343,19 +356,7 @@ function SmoothUI:CreateWindow(config)
 			PaddingLeft = UDim.new(0, 5)
 		}, Page)
 
-		Create("ImageLabel", {
-			Name = "LogoImage",
-			Size = UDim2.fromOffset(45, 45),
-			Position = UDim2.fromScale(0.924595296, 0),
-			BackgroundTransparency = 1,
-			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-			BorderColor3 = Color3.fromRGB(0, 0, 0),
-			BorderSizePixel = 0,
-			Image = logoAsset,
-			ZIndex = 1
-		}, Topbar)
-
-		function Tab:Select()
+	function Tab:Select()
 			for _, other in pairs(Window.Tabs) do
 				other.Page.Visible = false
 				Tween(other.Button, {
