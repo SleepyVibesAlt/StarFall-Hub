@@ -1,6 +1,6 @@
 -- Game: Above
 
-local SmoothUI = loadstring(readfile("guis/library.lua"))()
+local SmoothUI = loadstring(readfile("Starfall_Hub/guis/library.lua"))()
 
 local Library = SmoothUI.new()
 

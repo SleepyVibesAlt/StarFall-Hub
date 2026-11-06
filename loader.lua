@@ -101,7 +101,7 @@ local gameToggles = {} -- Store toggles for games
 
 -- ============ FILE MANAGEMENT ============
 local FilesToDownload = {
-    ["guis/library.lua"] = REPO_BASE .. "guis/library.lua",
+    ["Starfall_Hub/guis/library.lua"] = REPO_BASE .. "guis/library.lua",
 }
 
 local function downloadFile(remoteUrl, localPath)

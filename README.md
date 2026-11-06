@@ -36,7 +36,7 @@ local SmoothUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Slee
 
 ### Option 2: Local File
 ```lua
-local SmoothUI = loadstring(readfile("guis/library.lua"))()
+local SmoothUI = loadstring(readfile("Starfall_hub/guis/library.lua"))()
 ```
 
 ### Option 3: Direct Require (Roblox Studio)
