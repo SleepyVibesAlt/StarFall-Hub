@@ -1,616 +1,730 @@
--- StarFall Hub — Loader
--- Downloads assets, checks game ID, loads matching script
 
+--// STARFALL HUB — LOADER
+--// Downloads assets, installs game scripts, detects PlaceID,
+--// and loads the matching script.
+
+--// SERVICES
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
+--// REPOSITORY
 local REPO_BASE = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/"
 local REPO_API = "https://api.github.com/repos/SleepyVibesAlt/StarFall-Hub/contents/games?ref=main"
 
--- All downloaded files are kept inside one hub directory.
+--// DIRECTORIES
 local ROOT_DIR = "Starfall_Hub"
 local GUI_DIR = ROOT_DIR .. "/guis"
 local GAME_DIR = ROOT_DIR .. "/games"
+local ASSET_DIR = ROOT_DIR .. "/assets"
 
+--// FILE SYSTEM
 local function ensureFolder(path)
-	local exists = false
-	if isfolder then
-		local ok, result = pcall(isfolder, path)
-		exists = ok and result == true
-	end
+    if isfolder then
+        local success, exists = pcall(isfolder, path)
+        if success and exists then
+            return true
+        end
+    end
 
-	if not exists then
-		local ok, err = pcall(makefolder, path)
-		if not ok then
-			-- Some executors report an error when the folder already exists.
-			if isfolder then
-				local checkOk, result = pcall(isfolder, path)
-				if not checkOk or not result then
-					return false, tostring(err)
-				end
-			else
-				return false, tostring(err)
-			end
-		end
-	end
+    local success, err = pcall(makefolder, path)
 
-	return true
+    if not success then
+        if isfolder then
+            local checkSuccess, exists = pcall(isfolder, path)
+            if checkSuccess and exists then
+                return true
+            end
+        end
+
+        return false, tostring(err)
+    end
+
+    return true
 end
 
 local function prepareFolders()
-	for _, folder in ipairs({ROOT_DIR, GUI_DIR, GAME_DIR}) do
-		local ok, err = ensureFolder(folder)
-		if not ok then
-			return false, "Could not create folder " .. folder .. ": " .. tostring(err)
-		end
-	end
-	return true
+    for _, folder in ipairs({
+        ROOT_DIR,
+        GUI_DIR,
+        GAME_DIR,
+        ASSET_DIR
+    }) do
+        local success, err = ensureFolder(folder)
+
+        if not success then
+            return false, "Could not create " .. folder .. ": " .. tostring(err)
+        end
+    end
+
+    return true
 end
 
 local foldersReady, folderError = prepareFolders()
+
 if not foldersReady then
-	error("[StarFall] " .. tostring(folderError))
+    error("[StarFall] " .. tostring(folderError))
 end
 
--- ============ LOADING SCREEN ============
-
-local LoadingScreen = Instance.new("ScreenGui")
-LoadingScreen.Name = "StarFallLoading"
-LoadingScreen.ResetOnSpawn = false
-LoadingScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-LoadingScreen.IgnoreGuiInset = true
-LoadingScreen.Parent = PlayerGui
+--// LOADING SCREEN
+local StarFallLoading = Instance.new("ScreenGui")
+StarFallLoading.Name = "StarFallLoading"
+StarFallLoading.Parent = PlayerGui
+StarFallLoading.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+StarFallLoading.ResetOnSpawn = false
 
 local LoadingFrame = Instance.new("Frame")
 LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Size = UDim2.fromScale(1, 1)
+LoadingFrame.Parent = StarFallLoading
 LoadingFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 LoadingFrame.BorderSizePixel = 0
-LoadingFrame.Parent = LoadingScreen
-
-local LoadingCorner = Instance.new("UICorner")
-LoadingCorner.CornerRadius = UDim.new(0, 0)
-LoadingCorner.Parent = LoadingFrame
+LoadingFrame.Size = UDim2.fromScale(1, 1)
 
 local LoadingTitle = Instance.new("TextLabel")
-LoadingTitle.Name = "LoadingTitle"
-LoadingTitle.Size = UDim2.new(1, 0, 0, 40)
-LoadingTitle.Position = UDim2.new(0, 0, 0, 200)
+LoadingTitle.Parent = LoadingFrame
 LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.Position = UDim2.new(0, 0, 0, 200)
+LoadingTitle.Size = UDim2.new(1, 0, 0, 40)
+LoadingTitle.Font = Enum.Font.GothamBold
 LoadingTitle.Text = "StarFall Hub"
 LoadingTitle.TextColor3 = Color3.fromRGB(130, 90, 255)
 LoadingTitle.TextSize = 28
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextXAlignment = Enum.TextXAlignment.Center
-LoadingTitle.Parent = LoadingFrame
 
 local LoadingSubtitle = Instance.new("TextLabel")
-LoadingSubtitle.Name = "LoadingSubtitle"
-LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-LoadingSubtitle.Position = UDim2.new(0, 0, 0, 248)
+LoadingSubtitle.Parent = LoadingFrame
 LoadingSubtitle.BackgroundTransparency = 1
+LoadingSubtitle.Position = UDim2.new(0, 0, 0, 248)
+LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
+LoadingSubtitle.Font = Enum.Font.Gotham
 LoadingSubtitle.Text = "Initializing..."
 LoadingSubtitle.TextColor3 = Color3.fromRGB(145, 145, 160)
 LoadingSubtitle.TextSize = 14
-LoadingSubtitle.Font = Enum.Font.Gotham
-LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
-LoadingSubtitle.Parent = LoadingFrame
 
 local ProgressBar = Instance.new("Frame")
-ProgressBar.Name = "ProgressBar"
-ProgressBar.Size = UDim2.new(0.5, 0, 0, 6)
-ProgressBar.Position = UDim2.new(0.25, 0, 0, 280)
+ProgressBar.Parent = LoadingFrame
 ProgressBar.BackgroundColor3 = Color3.fromRGB(34, 34, 44)
 ProgressBar.BorderSizePixel = 0
-ProgressBar.Parent = LoadingFrame
+ProgressBar.Position = UDim2.new(0.25, 0, 0, 280)
+ProgressBar.Size = UDim2.new(0.5, 0, 0, 6)
 
 local ProgressCorner = Instance.new("UICorner")
 ProgressCorner.CornerRadius = UDim.new(1, 0)
 ProgressCorner.Parent = ProgressBar
 
 local ProgressFill = Instance.new("Frame")
-ProgressFill.Name = "ProgressFill"
-ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.Parent = ProgressBar
 ProgressFill.BackgroundColor3 = Color3.fromRGB(130, 90, 255)
 ProgressFill.BorderSizePixel = 0
-ProgressFill.Parent = ProgressBar
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
 
-local ProgressFillCorner = Instance.new("UICorner")
-ProgressFillCorner.CornerRadius = UDim.new(1, 0)
-ProgressFillCorner.Parent = ProgressFill
+local FillCorner = Instance.new("UICorner")
+FillCorner.CornerRadius = UDim.new(1, 0)
+FillCorner.Parent = ProgressFill
 
-local ProgressGradient = Instance.new("UIGradient")
-ProgressGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 75, 235)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255)),
+local UIGradient = Instance.new("UIGradient")
+UIGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(105, 75, 235)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255))
 })
-ProgressGradient.Parent = ProgressFill
+UIGradient.Parent = ProgressFill
 
 local StatusText = Instance.new("TextLabel")
-StatusText.Name = "StatusText"
-StatusText.Size = UDim2.new(1, 0, 0, 20)
-StatusText.Position = UDim2.new(0, 0, 0, 292)
+StatusText.Parent = LoadingFrame
 StatusText.BackgroundTransparency = 1
+StatusText.Position = UDim2.new(0, 0, 0, 292)
+StatusText.Size = UDim2.new(1, 0, 0, 20)
+StatusText.Font = Enum.Font.Gotham
 StatusText.Text = "0%"
 StatusText.TextColor3 = Color3.fromRGB(145, 145, 160)
 StatusText.TextSize = 12
-StatusText.Font = Enum.Font.Gotham
-StatusText.TextXAlignment = Enum.TextXAlignment.Center
-StatusText.Parent = LoadingFrame
 
--- Fade the loading interface in instead of showing it abruptly.
+--// LOADING SCREEN FADE IN
 LoadingFrame.BackgroundTransparency = 1
 
-local introTweens = {}
 for _, object in ipairs(LoadingFrame:GetDescendants()) do
-	if object:IsA("Frame") then
-		object.BackgroundTransparency = 1
-		table.insert(introTweens, TweenService:Create(
-			object,
-			TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{BackgroundTransparency = 0}
-		))
-	elseif object:IsA("TextLabel") then
-		object.TextTransparency = 1
-		table.insert(introTweens, TweenService:Create(
-			object,
-			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{TextTransparency = 0}
-		))
-	end
+    if object:IsA("Frame") then
+        object.BackgroundTransparency = 1
+
+        TweenService:Create(
+            object,
+            TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 0}
+        ):Play()
+
+    elseif object:IsA("TextLabel") then
+        object.TextTransparency = 1
+
+        TweenService:Create(
+            object,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {TextTransparency = 0}
+        ):Play()
+    end
 end
 
-table.insert(introTweens, TweenService:Create(
-	LoadingFrame,
-	TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-	{BackgroundTransparency = 0}
-))
+TweenService:Create(
+    LoadingFrame,
+    TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+    {BackgroundTransparency = 0}
+):Play()
 
-for _, tween in ipairs(introTweens) do
-	tween:Play()
-end
-
+--// PROGRESS
 local function setProgress(percent, status)
-	TweenService:Create(
-		ProgressFill,
-		TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-		{Size = UDim2.new(percent / 100, 0, 1, 0)}
-	):Play()
+    percent = math.clamp(percent, 0, 100)
 
-	StatusText.Text = percent .. "% — " .. status
-	LoadingSubtitle.Text = status
+    TweenService:Create(
+        ProgressFill,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+        {Size = UDim2.new(percent / 100, 0, 1, 0)}
+    ):Play()
+
+    StatusText.Text = percent .. "% — " .. status
+    LoadingSubtitle.Text = status
 end
 
 local function closeLoadingScreen()
-	if not LoadingScreen or not LoadingScreen.Parent then
-		return
-	end
+    if not StarFallLoading or not StarFallLoading.Parent then
+        return
+    end
 
-	local tweens = {}
-	for _, object in ipairs(LoadingScreen:GetDescendants()) do
-		if object:IsA("Frame") then
-			table.insert(tweens, TweenService:Create(
-				object,
-				TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{BackgroundTransparency = 1}
-			))
-		elseif object:IsA("TextLabel") then
-			table.insert(tweens, TweenService:Create(
-				object,
-				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{TextTransparency = 1}
-			))
-		end
-	end
+    local tweens = {}
 
-	table.insert(tweens, TweenService:Create(
-		LoadingFrame,
-		TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{BackgroundTransparency = 1}
-	))
+    for _, object in ipairs(LoadingFrame:GetDescendants()) do
+        if object:IsA("Frame") then
+            table.insert(tweens, TweenService:Create(
+                object,
+                TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundTransparency = 1}
+            ))
 
-	for _, tween in ipairs(tweens) do
-		tween:Play()
-	end
+        elseif object:IsA("TextLabel") then
+            table.insert(tweens, TweenService:Create(
+                object,
+                TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {TextTransparency = 1}
+            ))
+        end
+    end
 
-	task.wait(0.45)
+    table.insert(tweens, TweenService:Create(
+        LoadingFrame,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 1}
+    ))
 
-	if LoadingScreen and LoadingScreen.Parent then
-		LoadingScreen:Destroy()
-	end
+    for _, tween in ipairs(tweens) do
+        tween:Play()
+    end
+
+    task.wait(0.45)
+
+    if StarFallLoading and StarFallLoading.Parent then
+        StarFallLoading:Destroy()
+    end
 end
 
--- ============ FILE MANAGEMENT ============
-
-local FilesToDownload = {
-	[GUI_DIR .. "/library.lua"] = REPO_BASE .. "guis/library.lua",
-}
-
+--// FILE DOWNLOADER
 local function downloadFile(remoteUrl, localPath)
-	local success, content = pcall(function()
-		return game:HttpGet(remoteUrl)
-	end)
+    local success, content = pcall(function()
+        return game:HttpGet(remoteUrl)
+    end)
 
-	if not success or type(content) ~= "string" or content == "" then
-		return false, "Failed to download: " .. remoteUrl
-	end
+    if not success or type(content) ~= "string" or content == "" then
+        return false, "Failed to download: " .. remoteUrl
+    end
 
-	local writeSuccess, err = pcall(function()
-		writefile(localPath, content)
-	end)
+    local writeSuccess, err = pcall(function()
+        writefile(localPath, content)
+    end)
 
-	if not writeSuccess then
-		return false, "Failed to write " .. localPath .. ": " .. tostring(err)
-	end
+    if not writeSuccess then
+        return false, "Failed to write " .. localPath .. ": " .. tostring(err)
+    end
 
-	return true
+    return true
 end
 
 local function ensureFile(localPath, remoteUrl)
-	-- If file already exists locally, skip download
-	local success, content = pcall(function()
-		return readfile(localPath)
-	end)
-	if success and content then
-		return true
-	end
+    if isfile then
+        local success, exists = pcall(isfile, localPath)
 
-	return downloadFile(remoteUrl, localPath)
+        if success and exists then
+            return true
+        end
+    end
+
+    return downloadFile(remoteUrl, localPath)
 end
 
--- ============ GAME MAP (PlaceID -> Game Script) ============
+--// ASSET DOWNLOADER
+-- Add image files and other assets here.
+-- Files are stored in Starfall_Hub/assets/.
 
-local GameMap = {
-	[124357835578554] = GAME_DIR .. "/124357835578554.lua",
-
-	-- Add game mappings here using local GAME_DIR paths:
-	-- [GAME_PLACE_ID] = GAME_DIR .. "/PLACE_ID.lua",
+local AssetsToDownload = {
+    -- Example:
+    -- ["logo.png"] = "https://example.com/logo.png",
+    -- ["icon.png"] = "https://example.com/icon.png",
 }
 
--- ============ GAMES DIRECTORY INSTALLER ============
+local function installAssets(forceUpdate)
+    local installed = 0
+    local skipped = 0
+    local failed = 0
 
--- Reads the repository's games/ directory through GitHub's public contents API,
--- then downloads every top-level .lua game script into Starfall_Hub/games/.
--- Existing local scripts that are not in the repository are left untouched.
-local function installRepositoryGames()
-	local requestOk, response = pcall(function()
-		return game:HttpGet(REPO_API)
-	end)
+    for fileName, remoteUrl in pairs(AssetsToDownload) do
+        local localPath = ASSET_DIR .. "/" .. fileName
 
-	if not requestOk or type(response) ~= "string" then
-		return false, "Could not retrieve the GitHub games directory."
-	end
+        local exists = false
 
-	local decodeOk, entries = pcall(function()
-		return HttpService:JSONDecode(response)
-	end)
+        if isfile then
+            local success, result = pcall(isfile, localPath)
+            exists = success and result == true
+        end
 
-	if not decodeOk or type(entries) ~= "table" then
-		return false, "GitHub returned an invalid games directory listing."
-	end
+        if exists and not forceUpdate then
+            skipped += 1
+        else
+            local success, err = downloadFile(remoteUrl, localPath)
 
-	local installed = 0
-	local skipped = 0
+            if success then
+                installed += 1
+            else
+                failed += 1
+                warn("[StarFall] Asset error: " .. tostring(err))
+            end
+        end
+    end
 
-	for _, entry in ipairs(entries) do
-		if entry.type == "file"
-			and type(entry.name) == "string"
-			and entry.name:match("%.lua$")
-			and type(entry.download_url) == "string" then
-
-			local localPath = GAME_DIR .. "/" .. entry.name
-			local ok, err = downloadFile(entry.download_url, localPath)
-
-			if ok then
-				installed += 1
-			else
-				skipped += 1
-				warn("[StarFall] Could not install " .. entry.name .. ": " .. tostring(err))
-			end
-		end
-	end
-
-	return true, installed, skipped
+    return installed, skipped, failed
 end
 
--- ============ SETUP ============
+--// ASSET LOADER
+local function getAsset(fileName)
+    local path = ASSET_DIR .. "/" .. fileName
 
-local totalSteps = #FilesToDownload + 3 -- assets + games install + scan + detect
+    if not isfile or not getcustomasset then
+        warn("[StarFall] Custom assets are not supported by this executor.")
+        return nil
+    end
+
+    local success, exists = pcall(isfile, path)
+
+    if not success or not exists then
+        warn("[StarFall] Asset does not exist: " .. path)
+        return nil
+    end
+
+    local assetSuccess, asset = pcall(getcustomasset, path)
+
+    if not assetSuccess then
+        warn("[StarFall] Could not load asset: " .. tostring(asset))
+        return nil
+    end
+
+    return asset
+end
+
+--// GAME MAP
+local GameMap = {
+    [124357835578554] = GAME_DIR .. "/124357835578554.lua",
+
+    -- [PLACE_ID] = GAME_DIR .. "/PLACE_ID.lua",
+}
+
+--// GAMES DIRECTORY INSTALLER
+local function installRepositoryGames(forceUpdate)
+    local requestOk, response = pcall(function()
+        return game:HttpGet(REPO_API)
+    end)
+
+    if not requestOk or type(response) ~= "string" then
+        return false, "Could not retrieve GitHub games directory."
+    end
+
+    local decodeOk, entries = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+
+    if not decodeOk or type(entries) ~= "table" then
+        return false, "GitHub returned an invalid directory listing."
+    end
+
+    local installed = 0
+    local skipped = 0
+    local failed = 0
+
+    for _, entry in ipairs(entries) do
+        if entry.type == "file"
+            and type(entry.name) == "string"
+            and entry.name:match("%.lua$")
+            and type(entry.download_url) == "string" then
+
+            local localPath = GAME_DIR .. "/" .. entry.name
+            local exists = false
+
+            if isfile then
+                local success, result = pcall(isfile, localPath)
+                exists = success and result == true
+            end
+
+            if exists and not forceUpdate then
+                skipped += 1
+            else
+                local success, err = downloadFile(entry.download_url, localPath)
+
+                if success then
+                    installed += 1
+                else
+                    failed += 1
+                    warn("[StarFall] Could not install " .. entry.name .. ": " .. tostring(err))
+                end
+            end
+        end
+    end
+
+    return true, installed, skipped, failed
+end
+
+--// SETUP
+local FilesToDownload = {
+    [GUI_DIR .. "/library.lua"] = REPO_BASE .. "guis/library.lua",
+}
+
+local totalSteps = #FilesToDownload + 3
 local currentStep = 0
 
 local function progress(amount, status)
-	currentStep = currentStep + amount
-	local percent = math.floor((currentStep / totalSteps) * 100)
-	setProgress(math.min(percent, 100), status)
+    currentStep += amount
+
+    local percent = math.floor((currentStep / totalSteps) * 100)
+    setProgress(math.min(percent, 100), status)
 end
 
--- Phase 1: Download & write assets
+--// PHASE 1: GUI LIBRARY
 for localPath, remoteUrl in pairs(FilesToDownload) do
-	progress(1, "Downloading " .. localPath .. "...")
+    progress(1, "Downloading GUI library...")
 
-	local ok, err = ensureFile(localPath, remoteUrl)
-	if not ok then
-		setProgress(100, "Error: " .. tostring(err))
-		task.wait(3)
-		LoadingScreen:Destroy()
-		error(tostring(err))
-	end
+    local success, err = ensureFile(localPath, remoteUrl)
+
+    if not success then
+        setProgress(100, "Download failed")
+        task.wait(2)
+        closeLoadingScreen()
+        error(tostring(err))
+    end
 end
 
--- Phase 2: Create and populate the local games directory.
-progress(1, "Installing games directory...")
-local gamesInstallOk, gamesInstalled, gamesSkipped = installRepositoryGames()
+--// PHASE 2: ASSETS
+progress(1, "Installing assets...")
 
-if not gamesInstallOk then
-	warn("[StarFall] " .. tostring(gamesInstalled))
-else
-	setProgress(
-		math.floor((currentStep / totalSteps) * 100),
-		"Installed " .. tostring(gamesInstalled) .. " game script(s)"
-	)
+local assetInstalled, assetSkipped, assetFailed = installAssets(false)
+
+--// PHASE 3: GAMES
+progress(1, "Installing games...")
+
+local gamesOk, gamesInstalled, gamesSkipped, gamesFailed =
+    installRepositoryGames(false)
+
+if not gamesOk then
+    warn("[StarFall] " .. tostring(gamesInstalled))
 end
 
--- Phase 3: Scan for local games.
-progress(1, "Scanning local games...")
-task.wait(0.1)
-
--- Phase 4: Detect game and load
+--// PHASE 4: GAME DETECTION
 progress(1, "Detecting game...")
+
 task.wait(0.1)
 
 local PlaceId = game.PlaceId
 local GameScript = GameMap[PlaceId]
 
 if GameScript then
-	setProgress(100, "Loading game script...")
-
-	local repoRelativePath = "games/" .. GameScript:match("([^/]+)$")
-	local ok, err = ensureFile(GameScript, REPO_BASE .. repoRelativePath)
-
-	if not ok then
-		setProgress(100, "Error loading game: " .. tostring(err))
-		task.wait(3)
-		LoadingScreen:Destroy()
-		error(tostring(err))
-	end
-
-	local success, result = pcall(function()
-		local content = readfile(GameScript)
-		local fn = loadstring(content, GameScript)
-		if fn then fn() end
-	end)
-
-	if not success then
-		setProgress(100, "Runtime error: " .. tostring(result))
-		task.wait(3)
-		LoadingScreen:Destroy()
-		error(tostring(result))
-	end
+    setProgress(100, "Game detected!")
 else
-	setProgress(100, "Game not in library — opening hub...")
-	task.wait(0.5)
+    setProgress(100, "Game not in library — opening hub...")
 end
 
--- ============ HUB UI ============
-
+--// GUI LIBRARY
 local librarySource = readfile(GUI_DIR .. "/library.lua")
 
--- Patch the library so the main window animates instead of appearing instantly.
+--// SMOOTH WINDOW PATCH
 local visibilityPatch = [[
-	function Window:SetVisible(visible)
-		if self._visibilityTween then
-			self._visibilityTween:Cancel()
-			self._visibilityTween = nil
-		end
+    function Window:SetVisible(visible)
+        if self._visibilityTween then
+            self._visibilityTween:Cancel()
+            self._visibilityTween = nil
+        end
 
-		if visible then
-			Main.Visible = true
-			self._windowScale.Scale = 0.92
-			self._visibilityTween = TweenService:Create(
-				self._windowScale,
-				TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-				{Scale = 1}
-			)
-			self._visibilityTween:Play()
-		else
-			self._visibilityTween = TweenService:Create(
-				self._windowScale,
-				TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-				{Scale = 0.92}
-			)
-			self._visibilityTween:Play()
-			self._visibilityTween.Completed:Once(function()
-				if self._windowScale.Scale <= 0.93 then
-					Main.Visible = false
-				end
-			end)
-		end
-	end
+        if visible then
+            Main.Visible = true
+            self._windowScale.Scale = 0.92
+
+            self._visibilityTween = TweenService:Create(
+                self._windowScale,
+                TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+                {Scale = 1}
+            )
+
+            self._visibilityTween:Play()
+        else
+            self._visibilityTween = TweenService:Create(
+                self._windowScale,
+                TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Scale = 0.92}
+            )
+
+            self._visibilityTween:Play()
+
+            self._visibilityTween.Completed:Once(function()
+                if self._windowScale.Scale <= 0.93 then
+                    Main.Visible = false
+                end
+            end)
+        end
+    end
 ]]
 
 librarySource = librarySource:gsub(
-	"Corner%(Main, 12%)",
-	"Corner(Main, 12)\n\tMain.Visible = false\n\tlocal windowScale = Create(\"UIScale\", {Scale = 0.92}, Main)\n\tWindow._windowScale = windowScale"
+    "Corner%(Main, 12%)",
+    "Corner(Main, 12)\n\tMain.Visible = false\n\tlocal windowScale = Create(\"UIScale\", {Scale = 0.92}, Main)\n\tWindow._windowScale = windowScale"
 )
 
 librarySource = librarySource:gsub(
-	"function Window:Destroy%(%)",
-	visibilityPatch .. "function Window:Destroy()"
+    "function Window:Destroy%(%)",
+    visibilityPatch .. "function Window:Destroy()"
 )
 
 librarySource = librarySource:gsub(
-	"function Window:Toggle%(%)%s*Main.Visible = not Main.Visible%s*end",
-	"function Window:Toggle()\n\t\tself:SetVisible(not Main.Visible)\n\tend"
+    "function Window:Toggle%(%)%s*Main.Visible = not Main.Visible%s*end",
+    "function Window:Toggle()\n\t\tself:SetVisible(not Main.Visible)\n\tend"
 )
 
 librarySource = librarySource:gsub(
-	"Main.Visible = not Main.Visible",
-	"Window:SetVisible(not Main.Visible)"
+    "Main.Visible = not Main.Visible",
+    "Window:SetVisible(not Main.Visible)"
 )
 
 local SmoothUI = loadstring(librarySource, "StarFall SmoothUI")()
+
+if not SmoothUI then
+    closeLoadingScreen()
+    error("[StarFall] Failed to initialize GUI library.")
+end
+
 local Library = SmoothUI.new()
 
 local Window = Library:CreateWindow({
-	Title = "StarFall Hub",
+    Title = "StarFall Hub",
 })
 
--- ============ LOAD GAME SCRIPT ============
-
+--// SCRIPT LOADER
 local function loadScript(filePath)
-	local success, result = pcall(function()
-		local content = readfile(filePath)
-		if not content then
-			error("Cannot read file: " .. filePath)
-		end
+    local success, result = pcall(function()
+        local content = readfile(filePath)
 
-		local fn = loadstring(content, filePath)
-		if not fn then
-			error("Invalid script: " .. filePath)
-		end
+        if not content then
+            error("Cannot read file: " .. filePath)
+        end
 
-		fn()
-	end)
+        local fn, compileError = loadstring(content, filePath)
 
-	if not success then
-		Library:Notify("Load Error", tostring(result), 5)
-		print("[StarFall] Error: " .. tostring(result))
-	else
-		Library:Notify("Loaded", filePath, 2)
-	end
+        if not fn then
+            error(compileError or "Invalid script.")
+        end
+
+        fn()
+    end)
+
+    if not success then
+        Library:Notify("Load Error", tostring(result), 5)
+        warn("[StarFall] Error: " .. tostring(result))
+    else
+        Library:Notify("Loaded", filePath, 2)
+    end
+
+    return success
 end
 
--- ============ GAMES TAB ============
-
+--// GAMES TAB
 local GamesTab = Window:CreateTab("Games")
 local GamesSection = GamesTab:CreateSection("Select Script")
 
 local function getAvailableGames()
-	local games = {}
-	local files = listfiles(GAME_DIR .. "/")
+    local games = {}
 
-	for _, file in ipairs(files) do
-		if string.find(file, "%.lua$") then
-			local name = file:match("([^/]+)%.lua$") or file
-			table.insert(games, {name = name, path = file})
-		end
-	end
+    local success, files = pcall(function()
+        return listfiles(GAME_DIR .. "/")
+    end)
 
-	return games
+    if not success or type(files) ~= "table" then
+        return games
+    end
+
+    for _, file in ipairs(files) do
+        local normalized = file:gsub("\\", "/")
+
+        if normalized:match("%.lua$") then
+            local name = normalized:match("([^/]+)%.lua$")
+
+            if name then
+                table.insert(games, {
+                    name = name,
+                    path = file
+                })
+            end
+        end
+    end
+
+    table.sort(games, function(a, b)
+        return a.name:lower() < b.name:lower()
+    end)
+
+    return games
 end
 
 local function buildGameList()
-	-- Clear existing entries
-	for _, child in ipairs(GamesSection.Container:GetChildren()) do
-		child:Destroy()
-	end
+    for _, child in ipairs(GamesSection.Container:GetChildren()) do
+        child:Destroy()
+    end
 
-	local games = getAvailableGames()
+    local games = getAvailableGames()
 
-	for _, gameEntry in ipairs(games) do
-		GamesSection:CreateButton({
-			Name = gameEntry.name,
-			Callback = function()
-				loadScript(gameEntry.path)
-			end,
-		})
-	end
+    for _, gameEntry in ipairs(games) do
+        GamesSection:CreateButton({
+            Name = gameEntry.name,
 
-	Library:Notify("Games", #games .. " script(s) available", 2)
+            Callback = function()
+                loadScript(gameEntry.path)
+            end,
+        })
+    end
+
+    Library:Notify("Games", #games .. " script(s) available", 2)
 end
 
 GamesSection:CreateButton({
-	Name = "Install / Update Games",
-	Callback = function()
-		Library:Notify("Installing", "Downloading scripts from the GitHub games folder...", 3)
+    Name = "Install / Update Games",
 
-		local ok, installed, skipped = installRepositoryGames()
-		if not ok then
-			Library:Notify("Install Error", tostring(installed), 5)
-			return
-		end
+    Callback = function()
+        Library:Notify("Installing", "Updating game scripts...", 3)
 
-		buildGameList()
-		Library:Notify(
-			"Games Installed",
-			tostring(installed) .. " script(s) installed; " .. tostring(skipped) .. " failed.",
-			4
-		)
-	end,
+        local ok, installed, skipped, failed =
+            installRepositoryGames(true)
+
+        if not ok then
+            Library:Notify("Install Error", tostring(installed), 5)
+            return
+        end
+
+        buildGameList()
+
+        Library:Notify(
+            "Games Updated",
+            tostring(installed) .. " installed, " ..
+            tostring(skipped) .. " skipped, " ..
+            tostring(failed) .. " failed.",
+            4
+        )
+    end,
 })
 
 GamesSection:CreateButton({
-	Name = "Refresh Game List",
-	Callback = buildGameList,
+    Name = "Refresh Game List",
+
+    Callback = buildGameList,
 })
 
 GamesSection:CreateButton({
-	Name = "Load All",
-	Callback = function()
-		local loaded = 0
-		for _, gameEntry in ipairs(getAvailableGames()) do
-			loadScript(gameEntry.path)
-			loaded += 1
-		end
+    Name = "Load All",
 
-		Library:Notify("Loaded", loaded .. " script(s)", 2)
-	end,
+    Callback = function()
+        local loaded = 0
+
+        for _, gameEntry in ipairs(getAvailableGames()) do
+            if loadScript(gameEntry.path) then
+                loaded += 1
+            end
+        end
+
+        Library:Notify("Loaded", loaded .. " script(s)", 3)
+    end,
 })
 
--- ============ SETTINGS TAB ============
-
+--// SETTINGS TAB
 local SettingsTab = Window:CreateTab("Settings")
 local SettingsSection = SettingsTab:CreateSection("Options")
 
 SettingsSection:CreateButton({
-	Name = "Re-download Assets",
-	Callback = function()
-		Library:Notify("Updating", "Refreshing hub files and game scripts...", 3)
+    Name = "Re-download Assets",
 
-		for localPath, remoteUrl in pairs(FilesToDownload) do
-			local ok, err = downloadFile(remoteUrl, localPath)
-			if not ok then
-				Library:Notify("Error", "Failed: " .. tostring(err), 5)
-				return
-			end
-		end
+    Callback = function()
+        Library:Notify("Updating", "Refreshing hub assets and scripts...", 3)
 
-		local ok, installed, skipped = installRepositoryGames()
-		if not ok then
-			Library:Notify("Update Error", tostring(installed), 5)
-			return
-		end
+        for localPath, remoteUrl in pairs(FilesToDownload) do
+            local success, err = downloadFile(remoteUrl, localPath)
 
-		buildGameList()
-		Library:Notify(
-			"Updated",
-			tostring(installed) .. " game script(s) installed; " .. tostring(skipped) .. " failed.",
-			4
-		)
-	end,
+            if not success then
+                Library:Notify("Error", tostring(err), 5)
+                return
+            end
+        end
+
+        local installed, skipped, failed = installAssets(true)
+
+        local ok, gameInstalled, gameSkipped, gameFailed =
+            installRepositoryGames(true)
+
+        if not ok then
+            Library:Notify("Update Error", tostring(gameInstalled), 5)
+            return
+        end
+
+        buildGameList()
+
+        Library:Notify(
+            "Updated",
+            tostring(installed) .. " assets and " ..
+            tostring(gameInstalled) .. " games installed.",
+            4
+        )
+    end,
 })
 
 SettingsSection:CreateButton({
-	Name = "Current PlaceID",
-	Callback = function()
-		Library:Notify("Place ID", tostring(PlaceId), 3)
-	end,
+    Name = "Current PlaceID",
+
+    Callback = function()
+        Library:Notify("Place ID", tostring(PlaceId), 3)
+    end,
 })
 
--- ============ INIT ============
-
+--// INIT
 buildGameList()
 
--- Auto-load if game is known
+--// AUTO LOAD KNOWN GAME
 if GameMap[PlaceId] then
-	task.wait(1)
-	loadScript(GameMap[PlaceId])
+    task.wait(1)
+
+    local success, err = ensureFile(
+        GameScript,
+        REPO_BASE .. "games/" .. GameScript:match("([^/]+)$")
+    )
+
+    if success then
+        loadScript(GameScript)
+    else
+        Library:Notify("Game Error", tostring(err), 5)
+    end
 end
 
+--// OPEN HUB
 Window:SetVisible(true)
+
 closeLoadingScreen()
 
-Library:Notify("StarFall Hub", "Ready! Press RightShift to toggle.", 4)
+Library:Notify(
+    "StarFall Hub",
+    "Ready! Press RightShift to toggle.",
+    4
+)
