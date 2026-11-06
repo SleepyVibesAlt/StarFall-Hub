@@ -1,4 +1,5 @@
 games/*.lua
+ACGames/*.lua
 # Backup folder
 backup/
 .gitignore
