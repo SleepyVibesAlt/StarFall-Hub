@@ -292,13 +292,22 @@ local SettingsSection = SettingsTab:CreateSection("Options")
 SettingsSection:CreateButton({
     Name = "Re-download Assets",
     Callback = function()
-        setProgress(0, "Re-downloading...")
-        LoadingScreen:Destroy()
-        -- Re-run setup
+        Library:Notify("Updating", "Deleting and redownloading assets...", 3)
+        -- Delete existing files first
+        for localPath in pairs(FilesToDownload) do
+            local success, _ = pcall(function()
+                delfile(localPath)
+            end)
+            if not success then
+                Library:Notify("Warning", "Could not delete " .. localPath, 3)
+            end
+        end
+        -- Redownload everything
         for localPath, remoteUrl in pairs(FilesToDownload) do
-            local ok, err = ensureFile(localPath, remoteUrl)
+            local ok, err = downloadFile(remoteUrl, localPath)
             if not ok then
-                error(tostring(err))
+                Library:Notify("Error", "Failed: " .. tostring(err), 5)
+                return
             end
         end
         Library:Notify("Updated", "All assets refreshed!", 2)
@@ -309,29 +318,6 @@ SettingsSection:CreateButton({
     Name = "Current PlaceID",
     Callback = function()
         Library:Notify("Place ID", tostring(PlaceId), 3)
-    end
-})
-
-SettingsSection:CreateButton({
-    Name = "Register This Game",
-    Callback = function()
-        Library:InputPrompt({
-            Title = "Register Game",
-            Message = "Enter the Place ID for this game:",
-            Placeholder = "e.g. 124357835578554",
-            Buttons = {
-                {Text = "Cancel"},
-                {Text = "Register", Primary = true, Callback = function(text)
-                    local pid = tonumber(text)
-                    if pid then
-                        GameMap[pid] = "games/" .. tostring(pid) .. ".lua"
-                        Library:Notify("Registered", "PlaceID " .. tostring(pid) .. " mapped!", 3)
-                    else
-                        Library:Notify("Error", "Invalid Place ID", 3)
-                    end
-                end}
-            }
-        })
     end
 })
 
