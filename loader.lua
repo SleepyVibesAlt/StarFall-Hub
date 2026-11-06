@@ -286,8 +286,8 @@ end
 -- Files are stored in Starfall_Hub/assets/.
 
 local AssetsToDownload = {
-    ["left_logo"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
-    ["right_logo"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
+    ["left_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
+    ["right_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
 }
 
 -- Verify if local asset matches remote (by content comparison)
@@ -484,18 +484,33 @@ task.wait(0.1)
 local PlaceId = game.PlaceId
 local GameScript = GameMap[PlaceId]
 
+-- Wait until minimum load time reached
+local elapsed = tick() - loadStartTime
+if elapsed < MIN_LOAD_TIME then
+    task.wait(MIN_LOAD_TIME - elapsed)
+end
+
+-- Animate progress from 15% to 100% with status messages
+local statusMessages = {
+    "Finalizing assets...",
+    "Loading game data...",
+    "Preparing interface...",
+    "Almost ready...",
+}
+
+for i, msg in ipairs(statusMessages) do
+    local targetPercent = 15 + math.floor((i / #statusMessages) * 85)
+    setProgress(targetPercent, msg)
+    task.wait(0.15)
+end
+
 if GameScript then
     setProgress(100, "Game detected!")
 else
     setProgress(100, "Game not in library — opening hub...")
 end
 
--- Wait until minimum load time reached, then hold for 1 more second
-local elapsed = tick() - loadStartTime
-if elapsed < MIN_LOAD_TIME then
-    task.wait(MIN_LOAD_TIME - elapsed)
-end
-task.wait(1)
+task.wait(0.3)
 
 --// GUI LIBRARY
 local librarySource = readfile(GUI_DIR .. "/library.lua")

@@ -1,7 +1,7 @@
 local SmoothUI = {}
 SmoothUI.__index = SmoothUI
 
-local logoAsset = getcustomasset("left_logo")
+local logoAsset = getcustomasset("left_logo.png")
 
 -- Convert any value to a readable string (handles tables, nil, etc.)
 local function toString(value)
