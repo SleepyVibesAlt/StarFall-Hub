@@ -406,6 +406,8 @@ local FilesToDownload = {
 
 local totalSteps = #FilesToDownload + 3
 local currentStep = 0
+local loadStartTime = tick()
+local MIN_LOAD_TIME = 3 -- seconds
 
 local function progress(amount, status)
     currentStep += amount
@@ -455,6 +457,12 @@ if GameScript then
     setProgress(100, "Game detected!")
 else
     setProgress(100, "Game not in library — opening hub...")
+end
+
+-- Ensure minimum load time of 3 seconds
+local elapsed = tick() - loadStartTime
+if elapsed < MIN_LOAD_TIME then
+    task.wait(MIN_LOAD_TIME - elapsed)
 end
 
 --// GUI LIBRARY

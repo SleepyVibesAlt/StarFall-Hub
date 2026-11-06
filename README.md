@@ -1,3 +1,5 @@
+# Please note that this UILibrary was made specifically for my ScriptHub (Starfall)
+
 # 🌟 StarFall Hub — Smooth UI Library
 
 A lightweight, modern Roblox UI library with smooth animations, collapsible sections, and a clean dark theme. Built for script hubs, exploit GUIs, and in-game menus.
