@@ -354,7 +354,7 @@ function SmoothUI:CreateWindow(config)
 			ScaleType = Enum.ScaleType.Slice,
 			SliceCenter = Rect.new(100, 100, 100, 100),
 			ZIndex = -1
-		}, Page)
+		}, Topbar)
 
 		function Tab:Select()
 			for _, other in pairs(Window.Tabs) do
