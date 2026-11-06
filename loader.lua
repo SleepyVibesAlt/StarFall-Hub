@@ -183,9 +183,19 @@ TweenService:Create(
     {BackgroundTransparency = 0}
 ):Play()
 
+-- Timing config (must be before setProgress which uses them)
+local loadStartTime = tick()
+local MIN_LOAD_TIME = 3 -- seconds
+
 --// PROGRESS
 local function setProgress(percent, status)
     percent = math.clamp(percent, 0, 100)
+
+    -- Cap progress bar at 15% until minimum load time is reached
+    local elapsed = tick() - loadStartTime
+    if elapsed < MIN_LOAD_TIME then
+        percent = math.min(percent, 15)
+    end
 
     TweenService:Create(
         ProgressFill,
@@ -276,9 +286,30 @@ end
 -- Files are stored in Starfall_Hub/assets/.
 
 local AssetsToDownload = {
-    ["left_logo"] = "https://github.com/SleepyVibesAlt/StarFall-Hub/blob/main/assets/Logo-Left.png",
-    ["right_logo"] = "https://github.com/SleepyVibesAlt/StarFall-Hub/blob/main/assets/Logo-Right.png",
+    ["left_logo"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
+    ["right_logo"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
 }
+
+-- Verify if local asset matches remote (by content comparison)
+local function verifyAsset(localPath, remoteUrl)
+    if not isfile then return false end
+
+    local success, exists = pcall(isfile, localPath)
+    if not success or not exists then return false end
+
+    -- Get local file content
+    local readOk, localContent = pcall(readfile, localPath)
+    if not readOk or type(localContent) ~= "string" then return false end
+
+    -- Get remote file content
+    local getOk, remoteContent = pcall(function()
+        return game:HttpGet(remoteUrl)
+    end)
+    if not getOk or type(remoteContent) ~= "string" then return false end
+
+    -- Compare content (size is usually enough, but content is more accurate)
+    return #localContent == #remoteContent
+end
 
 local function installAssets(forceUpdate)
     local installed = 0
@@ -288,16 +319,18 @@ local function installAssets(forceUpdate)
     for fileName, remoteUrl in pairs(AssetsToDownload) do
         local localPath = ASSET_DIR .. "/" .. fileName
 
-        local exists = false
+        local needsUpdate = forceUpdate
 
-        if isfile then
-            local success, result = pcall(isfile, localPath)
-            exists = success and result == true
+        if not needsUpdate then
+            local isValid = verifyAsset(localPath, remoteUrl)
+            if not isValid then
+                needsUpdate = true
+            else
+                skipped += 1
+            end
         end
 
-        if exists and not forceUpdate then
-            skipped += 1
-        else
+        if needsUpdate then
             local success, err = downloadFile(remoteUrl, localPath)
 
             if success then
@@ -406,8 +439,6 @@ local FilesToDownload = {
 
 local totalSteps = #FilesToDownload + 3
 local currentStep = 0
-local loadStartTime = tick()
-local MIN_LOAD_TIME = 3 -- seconds
 
 local function progress(amount, status)
     currentStep += amount
@@ -459,11 +490,12 @@ else
     setProgress(100, "Game not in library — opening hub...")
 end
 
--- Ensure minimum load time of 3 seconds
+-- Wait until minimum load time reached, then hold for 1 more second
 local elapsed = tick() - loadStartTime
 if elapsed < MIN_LOAD_TIME then
     task.wait(MIN_LOAD_TIME - elapsed)
 end
+task.wait(1)
 
 --// GUI LIBRARY
 local librarySource = readfile(GUI_DIR .. "/library.lua")
