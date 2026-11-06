@@ -345,15 +345,11 @@ function SmoothUI:CreateWindow(config)
 
 		Create("ImageLabel", {
 			Name = "PageBackground",
-			Size = UDim2.fromScale(0.5, 1),
-			Position = UDim2.fromScale(0.5, 0),
+			Size = UDim2.fromScale(45, 45),
+			Position = UDim2.fromScale(0.925, 0),
 			BackgroundTransparency = 1,
 			Image = logoAsset, -- Use the downloaded image asset
-			ImageColor3 = ThemeColor.Secondary,
-			ImageTransparency = 0.5,
-			ScaleType = Enum.ScaleType.Slice,
-			SliceCenter = Rect.new(100, 100, 100, 100),
-			ZIndex = -1
+			ZIndex = 1
 		}, Topbar)
 
 		function Tab:Select()
