@@ -6,7 +6,7 @@ A lightweight, modern Roblox UI library with smooth animations, collapsible sect
 
 ![Roblox](https://img.shields.io/badge/Roblox-Lua-00A2FF?style=flat-square&logo=roblox)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.1.0-blue?style=flat-square)
 
 ---
 
@@ -21,9 +21,10 @@ A lightweight, modern Roblox UI library with smooth animations, collapsible sect
 | **🔔 Toast Notifications** | Auto-dismissing notifications with countdown timers |
 | **🎯 Smooth Animations** | Quart easing on all transitions (toggles, sliders, sections, notifications) |
 | **📦 Zero Dependencies** | Single file, no external requires |
-| **📋 Dropdown Selector** | Inline single/multi-select dropdowns that push elements down |
+| **📋 Dropdown Selector** | Inline single/multi-select dropdowns with search, that push elements down |
 | **⌨️ Keybind Picker** | Click to bind keys/mouse buttons, fires callback on press |
 | **🏷️ Label Element** | Rich text labels with customizable styling, colors, alignment |
+| **➖ Divider Element** | Horizontal divider lines with customizable height, color, transparency |
 | **💬 Prompt Dialog** | Modal confirmations with custom buttons, full-screen backdrop |
 | **⌨️ Input Prompt** | Modal text input with placeholder, validation, mobile-optimized |
 
@@ -245,7 +246,7 @@ Section:CreateTextbox({
 ---
 
 ### `Section:CreateDropdown(config)`
-Adds an inline dropdown selector (single or multi-select) that expands within the section layout, pushing other elements down.
+Adds an inline dropdown selector (single or multi-select) with **built-in search bar** that expands within the section layout, pushing other elements down.
 
 ```lua
 local MyDropdown = Section:CreateDropdown({
@@ -258,6 +259,16 @@ local MyDropdown = Section:CreateDropdown({
     end
 })
 ```
+
+**Features:**
+- Inline expansion — pushes other section elements down via UIListLayout
+- Smooth height animation on expand/collapse
+- **Built-in search bar** — filters options in real-time as you type
+- Single or multi-select modes
+- Click outside to close (single select)
+- Automatic option highlighting
+- **Selection highlight feedback** — Single-select briefly highlights the chosen option (0.3s) before auto-closing, matching multi-select visual behavior
+- **Scrollable options** — Options container scrolls when exceeding 200px (no visible scrollbar)
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
@@ -304,6 +315,26 @@ local MyKeybind = Section:CreateKeybind({
 ```
 
 **Returns:** `{ Set = function(key, fireCallback?), Get = function() : EnumItem, WaitingForInput = function() : bool }`
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Name` | string | ✅ | Label next to keybind button |
+| `Key` | EnumItem | ❌ | Initial key (default: `Enum.KeyCode.RightShift`) |
+| `Callback` | function | ✅ | Called with `key` (EnumItem) when pressed |
+
+**Programmatic Control:**
+```lua
+MyKeybind:Set(Enum.KeyCode.F1)           -- Change key (callback NOT fired)
+MyKeybind:Set(Enum.KeyCode.F1, true)     -- Change key AND fire callback
+print(MyKeybind:Get().Name)              -- "F1"
+print(MyKeybind:WaitingForInput())       -- true/false (is user binding?)
+```
+
+**Features:**
+- Supports keyboard keys (`Enum.KeyCode`) and mouse buttons (`Enum.UserInputType`)
+- Visual feedback when waiting for input (shows "..." in accent color)
+- Callback only fires on actual key press, not on programmatic `Set()`
+- Optional `fireCallback` parameter on `Set()` to trigger callback manually
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
@@ -391,6 +422,103 @@ StyledLabel.SetColor(ThemeColor.Muted)
 StyledLabel.SetSize(16)
 StyledLabel.SetAlignment(Enum.TextXAlignment.Center)
 BoxedLabel.Destroy()
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Text` / `Name` | string | ✅ | Label text (Name used if Text not provided) |
+| `TextColor3` | Color3 | ❌ | Text color (default: `ThemeColor.Text`) |
+| `TextSize` | number | ❌ | Font size (default: `13`) |
+| `Font` | Enum.Font | ❌ | Font face (default: `GothamMedium`) |
+| `TextXAlignment` | Enum.TextXAlignment | ❌ | Horizontal alignment (default: `Left`) |
+| `TextWrapped` | boolean | ❌ | Wrap long text (default: `false`) |
+| `RichText` | boolean | ❌ | Enable `<font>`, `<b>`, `<i>` markup (default: `false`) |
+| `Height` | number | ❌ | Element height (default: `25`) |
+| `Padding` | number | ❌ | Left padding (default: `12`) |
+| `BackgroundColor3` | Color3 | ❌ | If set, adds colored background with rounded corners |
+| `CornerRadius` | number | ❌ | Corner radius for background (default: `6`) |
+
+**Usage Examples:**
+```lua
+-- Simple label
+local Label = Section:CreateLabel({Text = "Hello World"})
+
+-- Rich text with colors & bold
+local StyledLabel = Section:CreateLabel({
+    Text = "<font color='#825aff'>Colored</font> <b>Rich Text</b>",
+    RichText = true,
+    TextSize = 14,
+    TextColor3 = ThemeColor.Accent,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Height = 30
+})
+
+-- Label with background box
+local BoxedLabel = Section:CreateLabel({
+    Text = "Status: Active",
+    BackgroundColor3 = ThemeColor.Element,
+    TextColor3 = ThemeColor.Text,
+    Height = 28,
+    Padding = 8
+})
+
+-- Update programmatically
+Label.Set("New text")
+StyledLabel.SetColor(ThemeColor.Muted)
+StyledLabel.SetSize(16)
+StyledLabel.SetAlignment(Enum.TextXAlignment.Center)
+BoxedLabel.Destroy()
+```
+
+---
+
+### `Section:CreateDivider(config)`
+Adds a horizontal divider line to visually separate sections or groups of elements.
+
+```lua
+local MyDivider = Section:CreateDivider({
+    Height = 1,           -- Line thickness (default: 1)
+    Color = ThemeColor.Accent,  -- Line color (default: ThemeColor.Border)
+    Transparency = 0.5,   -- Line transparency (default: 0.5)
+    Padding = 8           -- Horizontal padding from edges (default: 8)
+})
+```
+
+**Returns:** `{ SetColor = function(color3), SetTransparency = function(number), SetHeight = function(number), Destroy = function() }`
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `Height` | number | ❌ | Line thickness in pixels (default: `1`) |
+| `Color` | Color3 | ❌ | Line color (default: `ThemeColor.Border`) |
+| `Transparency` | number | ❌ | Line transparency 0-1 (default: `0.5`) |
+| `Padding` | number | ❌ | Horizontal padding from left/right edges (default: `8`) |
+
+**Programmatic Control:**
+```lua
+MyDivider:SetColor(ThemeColor.Accent)  -- Change to accent color
+MyDivider:SetTransparency(0)           -- Make fully opaque
+MyDivider:SetHeight(2)                 -- Thicker line (2px)
+MyDivider:Destroy()                    -- Remove divider
+```
+
+**Usage Examples:**
+```lua
+-- Simple divider (defaults)
+Section:CreateDivider()
+
+-- Accent colored divider
+Section:CreateDivider({
+    Color = ThemeColor.Accent,
+    Height = 2,
+    Transparency = 0
+})
+
+-- Subtle divider with more padding
+Section:CreateDivider({
+    Color = ThemeColor.Muted,
+    Transparency = 0.7,
+    Padding = 16
+})
 ```
 
 ---
@@ -788,9 +916,32 @@ local Theme = {
 
 ## 🛠️ Extending the Library
 
-> **Note:** `CreateKeybind` and `CreateLabel` are now built-in! See API reference above.
+> **Note:** `CreateKeybind`, `CreateLabel`, and `CreateDivider` are now built-in! See API reference above.
 
 ---
+
+## 💡 Potential Future Features
+
+These are ideas for elements that could be added to the library in future versions:
+
+| Feature | Description |
+|---------|-------------|
+| **🎨 ColorPicker** | HSV color wheel + alpha slider, supports presets, returns Color3 |
+| **📊 ProgressBar** | Animated progress bar with percentage label, Set/Get methods |
+| **🔢 NumberInput** | Numeric TextBox with increment/decrement buttons, min/max/step |
+| **📁 ConfigManager** | Save/load configs to JSON (writefile/readfile), auto-save, import/export |
+| **📋 MultiSelect List** | Checkbox list for multiple selections (alternative to dropdown multi-select) |
+| **🔘 RadioGroup** | Mutually exclusive options displayed as radio buttons |
+| **📅 DatePicker** | Calendar-style date selection |
+| **🕐 TimePicker** | Time selection (hours/minutes/seconds) |
+| **🖼️ ImageElement** | Display images from asset IDs or custom assets with fit modes |
+| **📝 RichTextEditor** | Mini markdown/rich text input with formatting toolbar |
+| **🎭 TabGroup** | Horizontal tab bar within a section (nested tabs) |
+| **📂 CollapsibleGroup** | Group multiple sections under one collapsible header |
+| **🔔 NotificationQueue** | Better stacking, pause on hover, action buttons on notifications |
+| **🔍 SearchableDropdown** | (Already implemented!) Built-in search bar in dropdown |
+
+Want to contribute? Fork the repo and submit a PR!
 
 ## 📁 File Structure
 

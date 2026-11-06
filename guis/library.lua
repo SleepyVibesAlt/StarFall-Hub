@@ -431,6 +431,10 @@ function SmoothUI:CreateWindow(config)
 			local function SetExpanded(state)
 				expanded = state
 				ElementsContainer.Visible = state
+				-- Force layout update on the parent (Page) UIListLayout
+				if ElementsContainer.Parent then
+					ElementsContainer.Parent.UIListLayout:ApplyLayout()
+				end
 				Tween(Arrow, {Rotation = state and 0 or -90}, 0.2)
 			end
 
@@ -1179,6 +1183,47 @@ function SmoothUI:CreateWindow(config)
                 return labelAPI
             end
 
+			function sectionAPI:CreateDivider(config)
+				config = config or {}
+				local height = config.Height or 1
+				local color = config.Color or ThemeColor.Border
+				local transparency = config.Transparency or 0.5
+				local padding = config.Padding or 8
+
+				local Divider = self.CreateElement(height + (padding * 2), "Divider")
+				Divider.BackgroundTransparency = 1
+
+				local Line = Create("Frame", {
+					Name = "DividerLine",
+					Size = UDim2.new(1, -padding * 2, 0, height),
+					Position = UDim2.fromOffset(padding, padding),
+					BackgroundColor3 = color,
+					BackgroundTransparency = transparency,
+					BorderSizePixel = 0
+				}, Divider)
+
+				Corner(Line, height / 2)
+
+				local dividerAPI = {
+					SetColor = function(c)
+						Line.BackgroundColor3 = c
+					end,
+					SetTransparency = function(t)
+						Line.BackgroundTransparency = t
+					end,
+					SetHeight = function(h)
+						Line.Size = UDim2.new(1, -padding * 2, 0, h)
+						Divider.Size = UDim2.new(1, -11, 0, h + (padding * 2))
+						Corner(Line, h / 2)
+					end,
+					Destroy = function()
+						Divider:Destroy()
+					end
+				}
+
+				return dividerAPI
+			end
+
 			function sectionAPI:CreateDropdown(config)
 					config = config or {}
 					local Options = config.Options or {}
@@ -1884,8 +1929,15 @@ local BoxedLabel = Player:CreateLabel({
     Padding = 8
 })
 
+-- Divider examples
+Player:CreateDivider({Color = ThemeColor.Accent, Height = 2, Transparency = 0})
+
+local Settings = MainTab:CreateSection("Settings")
+Settings:CreateDivider()  -- Default subtle divider
+Settings:CreateDivider({Color = ThemeColor.Muted, Transparency = 0.7, Padding = 16})
+
 -- Auto-collapse sections after 10 seconds
-task.delay(10, function()
+task.delay(1, function()
     General:SetExpanded(false)
     Player:SetExpanded(false)
     Aimbot:SetExpanded(false)
