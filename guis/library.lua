@@ -954,7 +954,6 @@ function SmoothUI:CreateWindow(config)
 					{Text = "Cancel"},
 					{Text = "Confirm", Primary = true}
 				}
-				local AutoFocus = config.AutoFocus ~= false  -- default true, set false to disable
 				local SubmitOnEnter = config.SubmitOnEnter == true  -- default FALSE, opt-in
 				
 				local Overlay = Create("TextButton", {
@@ -1109,16 +1108,6 @@ function SmoothUI:CreateWindow(config)
 					end)
 				end
 
-				-- Optional auto-focus (default: true, set AutoFocus=false to disable)
-				if AutoFocus then
-					-- Defer one frame so the dialog is fully rendered first (reduces stiffness)
-					task.defer(function()
-						if not dismissed then
-							Input:CaptureFocus()
-						end
-					end)
-				end
-
 				-- SMOOTHER ANIMATION: render one frame first, THEN animate
 				-- This prevents the "freeze" on first frame
 				task.defer(function()
@@ -1255,11 +1244,14 @@ function SmoothUI:CreateWindow(config)
 					local BUTTON_HEIGHT = 25
 					local BUTTON_GAP = 4
 					local OPTION_HEIGHT = 24
-					local OPTION_GAP = 2
+					local OPTION_GAP = 4
 					local BOTTOM_PADDING = 10
+					local SEARCH_BAR_HEIGHT = 25
+					local MAX_OPTIONS_HEIGHT = 200 -- Max height of scrollable options area
 
 					-- Calculate collapsed height
 					local collapsedHeight = LABEL_HEIGHT + LABEL_GAP + BUTTON_HEIGHT + BOTTOM_PADDING
+					-- Expanded height includes search bar (calculated dynamically)
 
 					-- Main element frame - goes in the section's ElementsContainer
 					local ElementFrame = self.CreateElement(collapsedHeight, "Dropdown_" .. tostring(config.Name or "Dropdown"))
@@ -1313,21 +1305,61 @@ function SmoothUI:CreateWindow(config)
 						ZIndex = 2
 					}, Button)
 
-					-- Options container (inside ElementFrame, below button)
-					local OptionsContainer = Create("Frame", {
+					-- Options container (inside ElementFrame, below button) - ScrollingFrame for many options
+					local OptionsContainer = Create("ScrollingFrame", {
 						Name = "OptionsContainer",
 						Position = UDim2.fromOffset(10, LABEL_HEIGHT + LABEL_GAP + BUTTON_HEIGHT + BUTTON_GAP),
 						Size = UDim2.new(1, -20, 0, 0),
 						BackgroundTransparency = 1,
 						Visible = false,
 						ClipsDescendants = true,
-						AutomaticSize = Enum.AutomaticSize.Y
+						ScrollBarThickness = 0, -- No scrollbar
+						ScrollingDirection = Enum.ScrollingDirection.Y,
+						CanvasSize = UDim2.new(0, 0, 0, 0),
+						AutomaticCanvasSize = Enum.AutomaticSize.Y
 					}, ElementFrame)
+
+					-- Search bar
+					local SearchBar = Create("TextBox", {
+						Name = "DropdownSearchBar",
+						Size = UDim2.new(1.006, -20, 0, SEARCH_BAR_HEIGHT),
+						Position = UDim2.fromOffset(0, 0),
+						BackgroundColor3 = ThemeColor.Element,
+						Text = "",
+						PlaceholderText = "Search...",
+						PlaceholderColor3 = ThemeColor.Muted,
+						TextColor3 = ThemeColor.Text,
+						TextSize = 11,
+						Font = Enum.Font.Gotham,
+						ClearTextOnFocus = false,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						LayoutOrder = -1, -- Always at top
+					}, OptionsContainer)
+
+					Corner(SearchBar, 6)
+					Create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12)}, SearchBar)
+					Stroke(SearchBar, ThemeColor.Border, 0.5)
 
 					local OptionsLayout = Create("UIListLayout", {
 						Padding = UDim.new(0, OPTION_GAP),
 						SortOrder = Enum.SortOrder.LayoutOrder
 					}, OptionsContainer)
+
+					-- Search filtering
+					local function filterOptions(searchText)
+						searchText = searchText:lower()
+						for _, child in ipairs(OptionsContainer:GetChildren()) do
+							if child:IsA("TextButton") then
+								local optName = child.Text:lower():gsub("^%s+", "")
+								local matches = searchText == "" or optName:find(searchText, 1, true)
+								child.Visible = matches
+							end
+						end
+					end
+
+					SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
+						filterOptions(SearchBar.Text)
+					end)
 
 					local expanded = false
 					local outsideConnection = nil
@@ -1380,6 +1412,8 @@ function SmoothUI:CreateWindow(config)
 
 						if state then
 							OptionsContainer.Visible = true
+							SearchBar.Text = "" -- Clear search on open
+							filterOptions("") -- Show all options
 
 							-- Full options height (AbsoluteSize is reliable once visible)
 							local optionsHeight = OptionsContainer.AbsoluteSize.Y
@@ -1393,6 +1427,9 @@ function SmoothUI:CreateWindow(config)
 								end
 								if optionsHeight > 0 then optionsHeight -= OPTION_GAP end
 							end
+
+							-- Cap at max height for scrolling
+							optionsHeight = math.min(optionsHeight, MAX_OPTIONS_HEIGHT)
 
 							local totalHeight = collapsedHeight + BUTTON_GAP + optionsHeight
 
@@ -1444,7 +1481,7 @@ function SmoothUI:CreateWindow(config)
 					local function CreateOption(optName, optValue, layoutOrder)
 						local OptButton = Create("TextButton", {
 							Name = "Option_" .. tostring(optName),
-							Size = UDim2.new(1, 0, 0, OPTION_HEIGHT),
+							Size = UDim2.new(0.969, 0, 0, OPTION_HEIGHT),
 							BackgroundTransparency = 1,
 							Text = "  " .. tostring(optName),
 							TextColor3 = ThemeColor.Text,
@@ -1686,5 +1723,173 @@ function SmoothUI.new()
 
 	return self
 end
+
+local Library = SmoothUI.new()
+
+local Window = Library:CreateWindow({
+    Title = "StarFall Hub v1.0"
+})
+
+-- ============ MAIN TAB ============
+local MainTab = Window:CreateTab("Main")
+
+local General = MainTab:CreateSection("General")
+General:CreateButton({
+    Name = "Rejoin",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+})
+
+General:CreateButton({
+    Name = "Copy Discord",
+    Callback = function()
+        setclipboard("https://discord.gg/yourserver")
+        Library:Notify("Copied!", "Discord link in clipboard", 2)
+    end
+})
+
+local Player = MainTab:CreateSection("Player")
+local WS = Player:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    CurrentValue = 16,
+    Callback = function(v)
+        local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end
+})
+
+local JP = Player:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 300},
+    CurrentValue = 50,
+    Callback = function(v)
+        local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.JumpPower = v end
+    end
+})
+
+Player:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        game.Players.LocalPlayer:LoadCharacter()
+    end
+})
+
+local Noclip = Player:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(v) _G.Noclip = v end
+})
+
+-- Dropdown example (single select)
+local TargetPart = Player:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"},
+    CurrentOption = "Head",
+    MultiSelect = false,
+    Callback = function(selected)
+        _G.TargetPart = selected
+        Library:Notify("Target Changed", "Now targeting: " .. selected, 2)
+    end
+})
+
+-- Dropdown example (multi select)
+local MultiSelect = Player:CreateDropdown({
+    Name = "Multi Select",
+    Options = {"Option A", "Option B", "Option C", "Option D"},
+    CurrentOption = {},
+    MultiSelect = true,
+    Callback = function(selected)
+        local names = {}
+        for k, v in pairs(selected) do
+            if v then table.insert(names, k) end
+        end
+        Library:Notify("Multi-Select", "Selected: " .. table.concat(names, ", "), 2)
+    end
+})
+
+-- Dropdown example with Name/Value tables
+local CustomDropdown = Player:CreateDropdown({
+    Name = "Custom Values",
+    Options = {
+        {Name = "Head", Value = "HeadPart"},
+        {Name = "Torso", Value = "TorsoPart"},
+        {Name = "HumanoidRootPart", Value = "HRP"},
+    },
+    CurrentOption = "HeadPart",  -- Set by Value
+    MultiSelect = false,
+    Callback = function(selected)
+        _G.CustomValue = selected
+        print("Custom dropdown selected:", selected)
+    end
+})
+
+-- ============ COMBAT TAB ============
+local CombatTab = Window:CreateTab("Combat")
+
+local Aimbot = CombatTab:CreateSection("Aimbot")
+Aimbot:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Aimbot = v end})
+Aimbot:CreateToggle({Name = "Team Check", CurrentValue = true, Callback = function(v) _G.TeamCheck = v end})
+Aimbot:CreateToggle({Name = "Wall Check", CurrentValue = true, Callback = function(v) _G.WallCheck = v end})
+
+Aimbot:CreateSlider({Name = "FOV", Range = {10, 360}, CurrentValue = 90, Callback = function(v) _G.FOV = v end})
+Aimbot:CreateSlider({Name = "Smoothness", Range = {1, 20}, CurrentValue = 5, Callback = function(v) _G.Smooth = v end})
+
+local Trigger = CombatTab:CreateSection("Triggerbot")
+Trigger:CreateToggle({Name = "Enabled", CurrentValue = false, Callback = function(v) _G.Trigger = v end})
+Trigger:CreateSlider({Name = "Delay (ms)", Range = {0, 500}, CurrentValue = 50, Callback = function(v) _G.TriggerDelay = v end})
+
+-- ============ VISUALS TAB ============
+local VisualsTab = Window:CreateTab("Visuals")
+
+local ESP = VisualsTab:CreateSection("ESP")
+ESP:CreateToggle({Name = "Box", CurrentValue = false, Callback = function(v) _G.BoxESP = v end})
+ESP:CreateToggle({Name = "Names", CurrentValue = false, Callback = function(v) _G.NameESP = v end})
+ESP:CreateToggle({Name = "Health", CurrentValue = false, Callback = function(v) _G.HealthESP = v end})
+ESP:CreateToggle({Name = "Distance", CurrentValue = false, Callback = function(v) _G.DistESP = v end})
+ESP:CreateSlider({Name = "Max Distance", Range = {100, 5000}, CurrentValue = 1000, Callback = function(v) _G.MaxDist = v end})
+
+-- ============ STARTUP ============
+Library:Notify("StarFall Hub", "Loaded! Press RightShift to toggle.", 4)
+
+-- Keybind example (toggle UI with custom key)
+local Keybind = Player:CreateKeybind({
+    Name = "Toggle UI",
+    Key = Enum.KeyCode.RightShift,
+    Callback = function(key)
+        print("Pressed:", key.Name)
+        Window:Toggle()
+    end
+})
+
+-- Label examples
+local Label = Player:CreateLabel({Text = "Simple Label"})
+
+local StyledLabel = Player:CreateLabel({
+    Text = "<font color='#825aff'>Colored</font> <b>Rich Text</b>",
+    RichText = true,
+    TextSize = 14,
+    TextColor3 = ThemeColor.Accent,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Height = 30
+})
+
+local BoxedLabel = Player:CreateLabel({
+    Text = "Status: Active",
+    BackgroundColor3 = ThemeColor.Element,
+    TextColor3 = ThemeColor.Text,
+    Height = 28,
+    Padding = 8
+})
+
+-- Auto-collapse sections after 10 seconds
+task.delay(10, function()
+    General:SetExpanded(false)
+    Player:SetExpanded(false)
+    Aimbot:SetExpanded(false)
+    ESP:SetExpanded(false)
+end)
 
 return SmoothUI
