@@ -1,0 +1,3 @@
+games/*.lua
+# Backup folder
+backup/
