@@ -281,10 +281,6 @@ local function ensureFile(localPath, remoteUrl)
     return downloadFile(remoteUrl, localPath)
 end
 
---// ASSET DOWNLOADER
--- Add image files and other assets here.
--- Files are stored in Starfall_Hub/assets/.
-
 local AssetsToDownload = {
     ["left_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
     ["right_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
