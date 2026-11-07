@@ -719,9 +719,6 @@ if GameMap[PlaceId] then
     end
 end
 
---// OPEN HUB
-Window:SetVisible(true)
-
 closeLoadingScreen()
 
 Library:Notify(

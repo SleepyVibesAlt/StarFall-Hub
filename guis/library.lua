@@ -191,7 +191,8 @@ function SmoothUI:CreateWindow(config)
 		Position = UDim2.fromScale(0.5, 0.5),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = ThemeColor.Background,
-		BorderSizePixel = 0
+		BorderSizePixel = 0,
+		Visible = false
 	}, self.ScreenGui)
 
 	Corner(Main, 12)
