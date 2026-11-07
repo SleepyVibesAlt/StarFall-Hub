@@ -312,6 +312,31 @@ function SmoothUI:CreateWindow(config)
 		end
 	end)
 
+	-- SetVisible method for the window (handles show/hide with animation)
+	local function SetVisible(visible)
+		if visible then
+			Main.Visible = true
+			-- Scale animation from 0.92 to 1
+			local windowScale = Main:FindFirstChild("UIScale")
+			if not windowScale then
+				windowScale = Create("UIScale", {Scale = 0.92}, Main)
+			end
+			windowScale.Scale = 0.92
+			Tween(windowScale, {Scale = 1}, 0.32)
+		else
+			local windowScale = Main:FindFirstChild("UIScale")
+			if not windowScale then
+				windowScale = Create("UIScale", {Scale = 1}, Main)
+			end
+			Tween(windowScale, {Scale = 0.92}, 0.22)
+			task.delay(0.22, function()
+				if windowScale.Scale <= 0.93 then
+					Main.Visible = false
+				end
+			end)
+		end
+	end
+
 	-- Standalone logo hover/tap feedback
 	StandaloneLogo.MouseEnter:Connect(function()
 		Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50)}, 0.1)
@@ -323,7 +348,7 @@ function SmoothUI:CreateWindow(config)
 	-- Toggle function that handles both logo and standalone mode
 	local function ToggleUI()
 		local isVisible = Main.Visible
-		Window:SetVisible(not isVisible)
+		SetVisible(not isVisible)
 
 		-- Get the absolute position of the logo button for seamless transition
 		local logoAbsPos = LogoButton.AbsolutePosition
@@ -348,6 +373,7 @@ function SmoothUI:CreateWindow(config)
 	Window.LogoButton = LogoButton
 	Window.StandaloneLogo = StandaloneLogo
 	Window.ToggleUI = ToggleUI
+	Window.SetVisible = SetVisible
 
 	-- Dragging
 	local dragging = false

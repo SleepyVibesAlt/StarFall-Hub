@@ -269,25 +269,8 @@ local function downloadFile(remoteUrl, localPath)
     return true
 end
 
-local function ensureFile(localPath, remoteUrl)
-    if isfile then
-        local success, exists = pcall(isfile, localPath)
-
-        if success and exists then
-            return true
-        end
-    end
-
-    return downloadFile(remoteUrl, localPath)
-end
-
-local AssetsToDownload = {
-    ["left_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
-    ["right_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
-}
-
--- Verify if local asset matches remote (by content comparison)
-local function verifyAsset(localPath, remoteUrl)
+-- Verify if local file matches remote (by content comparison)
+local function verifyFile(localPath, remoteUrl)
     if not isfile then return false end
 
     local success, exists = pcall(isfile, localPath)
@@ -303,11 +286,32 @@ local function verifyAsset(localPath, remoteUrl)
     end)
     if not getOk or type(remoteContent) ~= "string" then return false end
 
-    -- Compare content (size is usually enough, but content is more accurate)
+    -- Compare content
     return #localContent == #remoteContent
 end
 
-local function installAssets(forceUpdate)
+local function ensureFile(localPath, remoteUrl)
+    -- Always check for updates - only skip if content is identical
+    if isfile then
+        local success, exists = pcall(isfile, localPath)
+        if success and exists then
+            local isCurrent = verifyFile(localPath, remoteUrl)
+            if isCurrent then
+                return true -- File is up to date
+            end
+            -- File exists but differs - will download update
+        end
+    end
+
+    return downloadFile(remoteUrl, localPath)
+end
+
+local AssetsToDownload = {
+    ["left_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Left.png",
+    ["right_logo.png"] = "https://raw.githubusercontent.com/SleepyVibesAlt/StarFall-Hub/main/assets/Logo-Right.png",
+}
+
+local function installAssets()
     local installed = 0
     local skipped = 0
     local failed = 0
@@ -315,18 +319,12 @@ local function installAssets(forceUpdate)
     for fileName, remoteUrl in pairs(AssetsToDownload) do
         local localPath = ASSET_DIR .. "/" .. fileName
 
-        local needsUpdate = forceUpdate
+        -- Always check for updates using content verification
+        local isCurrent = verifyFile(localPath, remoteUrl)
 
-        if not needsUpdate then
-            local isValid = verifyAsset(localPath, remoteUrl)
-            if not isValid then
-                needsUpdate = true
-            else
-                skipped += 1
-            end
-        end
-
-        if needsUpdate then
+        if isCurrent then
+            skipped += 1
+        else
             local success, err = downloadFile(remoteUrl, localPath)
 
             if success then
@@ -375,7 +373,7 @@ local GameMap = {
 }
 
 --// GAMES DIRECTORY INSTALLER
-local function installRepositoryGames(forceUpdate)
+local function installRepositoryGames()
     local requestOk, response = pcall(function()
         return game:HttpGet(REPO_API)
     end)
@@ -403,14 +401,11 @@ local function installRepositoryGames(forceUpdate)
             and type(entry.download_url) == "string" then
 
             local localPath = GAME_DIR .. "/" .. entry.name
-            local exists = false
 
-            if isfile then
-                local success, result = pcall(isfile, localPath)
-                exists = success and result == true
-            end
+            -- Always check for updates using content verification
+            local isCurrent = verifyFile(localPath, entry.download_url)
 
-            if exists and not forceUpdate then
+            if isCurrent then
                 skipped += 1
             else
                 local success, err = downloadFile(entry.download_url, localPath)
@@ -460,13 +455,13 @@ end
 --// PHASE 2: ASSETS
 progress(1, "Installing assets...")
 
-local assetInstalled, assetSkipped, assetFailed = installAssets(false)
+local assetInstalled, assetSkipped, assetFailed = installAssets()
 
 --// PHASE 3: GAMES
 progress(1, "Installing games...")
 
 local gamesOk, gamesInstalled, gamesSkipped, gamesFailed =
-    installRepositoryGames(false)
+    installRepositoryGames()
 
 if not gamesOk then
     warn("[StarFall] " .. tostring(gamesInstalled))
@@ -510,63 +505,6 @@ task.wait(0.3)
 
 --// GUI LIBRARY
 local librarySource = readfile(GUI_DIR .. "/library.lua")
-
---// SMOOTH WINDOW PATCH
-local visibilityPatch = [[
-    function Window:SetVisible(visible)
-        if self._visibilityTween then
-            self._visibilityTween:Cancel()
-            self._visibilityTween = nil
-        end
-
-        if visible then
-            Main.Visible = true
-            self._windowScale.Scale = 0.92
-
-            self._visibilityTween = TweenService:Create(
-                self._windowScale,
-                TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-                {Scale = 1}
-            )
-
-            self._visibilityTween:Play()
-        else
-            self._visibilityTween = TweenService:Create(
-                self._windowScale,
-                TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Scale = 0.92}
-            )
-
-            self._visibilityTween:Play()
-
-            self._visibilityTween.Completed:Once(function()
-                if self._windowScale.Scale <= 0.93 then
-                    Main.Visible = false
-                end
-            end)
-        end
-    end
-]]
-
-librarySource = librarySource:gsub(
-    "Corner%(Main, 12%)",
-    "Corner(Main, 12)\n\tMain.Visible = false\n\tlocal windowScale = Create(\"UIScale\", {Scale = 0.92}, Main)\n\tWindow._windowScale = windowScale"
-)
-
-librarySource = librarySource:gsub(
-    "function Window:Destroy%(%)",
-    visibilityPatch .. "function Window:Destroy()"
-)
-
-librarySource = librarySource:gsub(
-    "function Window:Toggle%(%)%s*Main.Visible = not Main.Visible%s*end",
-    "function Window:Toggle()\n\t\tself:SetVisible(not Main.Visible)\n\tend"
-)
-
-librarySource = librarySource:gsub(
-    "Main.Visible = not Main.Visible",
-    "Window:SetVisible(not Main.Visible)"
-)
 
 local SmoothUI = loadstring(librarySource, "StarFall SmoothUI")()
 
@@ -673,7 +611,7 @@ GamesSection:CreateButton({
         Library:Notify("Installing", "Updating game scripts...", 3)
 
         local ok, installed, skipped, failed =
-            installRepositoryGames(true)
+            installRepositoryGames()
 
         if not ok then
             Library:Notify("Install Error", tostring(installed), 5)
@@ -733,10 +671,10 @@ SettingsSection:CreateButton({
             end
         end
 
-        local installed, skipped, failed = installAssets(true)
+        local installed, skipped, failed = installAssets()
 
         local ok, gameInstalled, gameSkipped, gameFailed =
-            installRepositoryGames(true)
+            installRepositoryGames()
 
         if not ok then
             Library:Notify("Update Error", tostring(gameInstalled), 5)
