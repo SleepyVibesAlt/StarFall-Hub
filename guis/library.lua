@@ -1592,7 +1592,7 @@ function SmoothUI:CreateWindow(config)
 
 							-- Start from collapsed height so the tween is smooth even if interrupted
 							ElementFrame.Size = UDim2.new(1, -5, 0, collapsedHeight)
-							OptionsContainer.Size = UDim2.new(1, -5, 0, optionsHeight)
+							OptionsContainer.Size = UDim2.new(1, -20, 0, optionsHeight)
 							Tween(ElementFrame, {Size = UDim2.new(1, -5, 0, totalHeight)}, 0.25)
 							Tween(Arrow, {Rotation = 90}, 0.15)
 
