@@ -249,12 +249,11 @@ function SmoothUI:CreateWindow(config)
 		Tween(LogoButton, {ImageTransparency = 0}, 0.1)
 	end)
 
-	-- Standalone floating logo (for when GUI is minimized)
+	-- Standalone floating logo (for when GUI is minimized) - matches logo button size/position
 	local StandaloneLogo = Create("ImageButton", {
 		Name = "StandaloneLogo",
-		Size = UDim2.fromOffset(50, 50),
-		Position = UDim2.fromScale(0.95, 0.05),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(45, 45),  -- Match LogoButton size
+		Position = UDim2.fromScale(0.924595296, 0),  -- Match LogoButton position
 		BackgroundTransparency = 1,
 		Image = logoAsset,
 		Visible = false,
@@ -262,7 +261,7 @@ function SmoothUI:CreateWindow(config)
 		AutoButtonColor = false
 	}, self.ScreenGui)
 
-	Corner(StandaloneLogo, 25)
+	Corner(StandaloneLogo, 22)  -- Slightly rounded for standalone
 	Stroke(StandaloneLogo, ThemeColor.Accent, 0.3)
 
 	-- Add subtle shadow/glow effect
@@ -315,10 +314,10 @@ function SmoothUI:CreateWindow(config)
 
 	-- Standalone logo hover/tap feedback
 	StandaloneLogo.MouseEnter:Connect(function()
-		Tween(StandaloneLogo, {Size = UDim2.fromOffset(55, 55)}, 0.1)
+		Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50)}, 0.1)
 	end)
 	StandaloneLogo.MouseLeave:Connect(function()
-		Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50)}, 0.1)
+		Tween(StandaloneLogo, {Size = UDim2.fromOffset(45, 45)}, 0.1)
 	end)
 
 	-- Toggle function that handles both logo and standalone mode
@@ -326,14 +325,18 @@ function SmoothUI:CreateWindow(config)
 		local isVisible = Main.Visible
 		Window:SetVisible(not isVisible)
 
+		-- Get the absolute position of the logo button for seamless transition
+		local logoAbsPos = LogoButton.AbsolutePosition
+
 		-- Toggle standalone logo visibility (opposite of main window)
 		StandaloneLogo.Visible = not Main.Visible
 
-		-- Animate standalone logo appearance
 		if StandaloneLogo.Visible then
+			-- Position standalone logo exactly where the logo button is on screen
+			StandaloneLogo.Position = UDim2.fromOffset(logoAbsPos.X, logoAbsPos.Y)
 			StandaloneLogo.Size = UDim2.fromOffset(0, 0)
 			StandaloneLogo.ImageTransparency = 1
-			Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50), ImageTransparency = 0}, 0.3)
+			Tween(StandaloneLogo, {Size = UDim2.fromOffset(45, 45), ImageTransparency = 0}, 0.3)
 		end
 	end
 

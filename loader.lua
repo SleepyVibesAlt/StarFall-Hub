@@ -102,7 +102,7 @@ LoadingTitle.Parent = LoadingFrame
 local LoadingSubtitle = Instance.new("TextLabel")
 LoadingSubtitle.Name = "LoadingSubtitle"
 LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-LoadingSubtitle.Position = UDim2.new(0, 0, 0, 228)
+LoadingSubtitle.Position = UDim2.new(0, 0, 0, 248)
 LoadingSubtitle.BackgroundTransparency = 1
 LoadingSubtitle.Text = "Initializing..."
 LoadingSubtitle.TextColor3 = Color3.fromRGB(145, 145, 160)
@@ -111,83 +111,10 @@ LoadingSubtitle.Font = Enum.Font.Gotham
 LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
 LoadingSubtitle.Parent = LoadingFrame
 
--- Phase indicators container
-local PhaseContainer = Instance.new("Frame")
-PhaseContainer.Name = "PhaseContainer"
-PhaseContainer.Size = UDim2.new(0.5, 0, 0, 24)
-PhaseContainer.Position = UDim2.new(0.25, 0, 0, 256)
-PhaseContainer.BackgroundTransparency = 1
-PhaseContainer.Parent = LoadingFrame
-
-local PhaseLayout = Instance.new("UIListLayout")
-PhaseLayout.FillDirection = Enum.FillDirection.Horizontal
-PhaseLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-PhaseLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-PhaseLayout.Padding = UDim.new(0, 8)
-PhaseLayout.Parent = PhaseContainer
-
--- Phase labels (will be created dynamically)
-local phaseLabels = {}
-local phaseArrows = {}
-local PHASES = {"Downloading", "Verifying", "Installing", "Ready"}
-
-for i, phaseName in ipairs(PHASES) do
-	local phaseFrame = Instance.new("Frame")
-	phaseFrame.Name = "Phase_" .. phaseName
-	phaseFrame.Size = UDim2.new(0, 0, 1, 0)
-	phaseFrame.AutomaticSize = Enum.AutomaticSize.X
-	phaseFrame.BackgroundTransparency = 1
-	phaseFrame.LayoutOrder = i
-	phaseFrame.Parent = PhaseContainer
-
-	local phaseLabel = Instance.new("TextLabel")
-	phaseLabel.Name = "Label"
-	phaseLabel.Size = UDim2.new(0, 0, 1, 0)
-	phaseLabel.AutomaticSize = Enum.AutomaticSize.X
-	phaseLabel.BackgroundTransparency = 1
-	phaseLabel.Text = phaseName
-	phaseLabel.TextColor3 = Color3.fromRGB(80, 80, 95)
-	phaseLabel.TextSize = 11
-	phaseLabel.Font = Enum.Font.GothamMedium
-	phaseLabel.TextXAlignment = Enum.TextXAlignment.Center
-	phaseLabel.Parent = phaseFrame
-
-	local phaseDot = Instance.new("Frame")
-	phaseDot.Name = "Dot"
-	phaseDot.Size = UDim2.new(0, 8, 0, 8)
-	phaseDot.Position = UDim2.new(0.5, -4, 1, 4)
-	phaseDot.AnchorPoint = Vector2.new(0.5, 0)
-	phaseDot.BackgroundColor3 = Color3.fromRGB(80, 80, 95)
-	phaseDot.BorderSizePixel = 0
-	phaseDot.Parent = phaseFrame
-
-	local dotCorner = Instance.new("UICorner")
-	dotCorner.CornerRadius = UDim.new(1, 0)
-	dotCorner.Parent = phaseDot
-
-	phaseLabels[i] = {frame = phaseFrame, label = phaseLabel, dot = phaseDot}
-
-	-- Add arrow between phases (except last)
-	if i < #PHASES then
-		local arrow = Instance.new("TextLabel")
-		arrow.Name = "Arrow"
-		arrow.Size = UDim2.new(0, 16, 1, 0)
-		arrow.BackgroundTransparency = 1
-		arrow.Text = "▸"
-		arrow.TextColor3 = Color3.fromRGB(60, 60, 75)
-		arrow.TextSize = 14
-		arrow.Font = Enum.Font.Gotham
-		arrow.TextXAlignment = Enum.TextXAlignment.Center
-		arrow.LayoutOrder = i + 0.5  -- Between phases
-		arrow.Parent = PhaseContainer
-		table.insert(phaseArrows, arrow)
-	end
-end
-
 local ProgressBar = Instance.new("Frame")
 ProgressBar.Name = "ProgressBar"
 ProgressBar.Size = UDim2.new(0.5, 0, 0, 6)
-ProgressBar.Position = UDim2.new(0.25, 0, 0, 296)
+ProgressBar.Position = UDim2.new(0.25, 0, 0, 280)
 ProgressBar.BackgroundColor3 = Color3.fromRGB(34, 34, 44)
 ProgressBar.BorderSizePixel = 0
 ProgressBar.Parent = LoadingFrame
@@ -217,7 +144,7 @@ ProgressGradient.Parent = ProgressFill
 local StatusText = Instance.new("TextLabel")
 StatusText.Name = "StatusText"
 StatusText.Size = UDim2.new(1, 0, 0, 20)
-StatusText.Position = UDim2.new(0, 0, 0, 308)
+StatusText.Position = UDim2.new(0, 0, 0, 292)
 StatusText.BackgroundTransparency = 1
 StatusText.Text = "0%"
 StatusText.TextColor3 = Color3.fromRGB(145, 145, 160)
@@ -225,20 +152,6 @@ StatusText.TextSize = 12
 StatusText.Font = Enum.Font.Gotham
 StatusText.TextXAlignment = Enum.TextXAlignment.Center
 StatusText.Parent = LoadingFrame
-
--- Tips label (rotating tips)
-local TipsLabel = Instance.new("TextLabel")
-TipsLabel.Name = "TipsLabel"
-TipsLabel.Size = UDim2.new(1, -40, 0, 20)
-TipsLabel.Position = UDim2.new(0, 20, 1, -60)
-TipsLabel.BackgroundTransparency = 1
-TipsLabel.Text = ""
-TipsLabel.TextColor3 = Color3.fromRGB(90, 90, 105)
-TipsLabel.TextSize = 12
-TipsLabel.Font = Enum.Font.Gotham
-TipsLabel.TextXAlignment = Enum.TextXAlignment.Center
-TipsLabel.TextWrapped = true
-TipsLabel.Parent = LoadingFrame
 
 -- Fade the loading interface in instead of showing it abruptly.
 LoadingFrame.BackgroundTransparency = 1
@@ -274,31 +187,6 @@ TweenService:Create(
 local loadStartTime = tick()
 local MIN_LOAD_TIME = 3 -- seconds
 
---// ROTATING TIPS
-local LOADING_TIPS = {
-	"Tip: Press RightShift to toggle the hub anytime.",
-	"Tip: Game scripts auto-load when you join a supported game.",
-	"Tip: Use 'Install / Update Games' to get the latest scripts.",
-	"Tip: Check the Settings tab for PlaceID and asset updates.",
-	"Tip: Scripts are cached locally for faster loading next time.",
-	"Tip: Report bugs on the StarFall Hub GitHub repository.",
-	"Tip: The hub works on most popular executors.",
-	"Tip: Right-click the title bar to minimize quickly.",
-}
-
-local tipIndex = 1
-local tipsRunning = true
-
-task.spawn(function()
-	while tipsRunning and StarFallLoading and StarFallLoading.Parent do
-		if TipsLabel and TipsLabel.Parent then
-			TipsLabel.Text = LOADING_TIPS[tipIndex]
-		end
-		tipIndex = tipIndex % #LOADING_TIPS + 1
-		task.wait(4) -- Rotate tip every 4 seconds
-	end
-end)
-
 --// PROGRESS
 local function setProgress(percent, status)
     percent = math.clamp(percent, 0, 100)
@@ -319,90 +207,10 @@ local function setProgress(percent, status)
     LoadingSubtitle.Text = status
 end
 
---// PHASE INDICATORS
-local function setPhase(phaseIndex)
-    phaseIndex = math.clamp(phaseIndex, 1, #PHASES)
-
-    for i, phaseData in ipairs(phaseLabels) do
-        local isActive = i <= phaseIndex
-        local isComplete = i < phaseIndex
-
-        if isComplete then
-            -- Completed phase - purple
-            TweenService:Create(
-                phaseData.label,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {TextColor3 = Color3.fromRGB(130, 90, 255)}
-            ):Play()
-            TweenService:Create(
-                phaseData.dot,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(130, 90, 255)}
-            ):Play()
-        elseif isActive then
-            -- Current phase - bright purple with pulse
-            TweenService:Create(
-                phaseData.label,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {TextColor3 = Color3.fromRGB(165, 110, 255)}
-            ):Play()
-            TweenService:Create(
-                phaseData.dot,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(165, 110, 255)}
-            ):Play()
-
-            -- Pulse animation for current phase
-            task.spawn(function()
-                while tipsRunning and phaseLabels[i] and phaseLabels[i].dot and i == phaseIndex do
-                    TweenService:Create(
-                        phaseLabels[i].dot,
-                        TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-                        {Size = UDim2.new(0, 12, 0, 12)}
-                    ):Play()
-                    task.wait(0.8)
-                    if not (phaseLabels[i] and i == phaseIndex) then break end
-                    TweenService:Create(
-                        phaseLabels[i].dot,
-                        TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-                        {Size = UDim2.new(0, 8, 0, 8)}
-                    ):Play()
-                    task.wait(0.8)
-                end
-            end)
-        else
-            -- Future phase - dim
-            TweenService:Create(
-                phaseData.label,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {TextColor3 = Color3.fromRGB(80, 80, 95)}
-            ):Play()
-            TweenService:Create(
-                phaseData.dot,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(80, 80, 95), Size = UDim2.new(0, 8, 0, 8)}
-            ):Play()
-        end
-
-        -- Update arrows
-        for arrowIdx, arrow in ipairs(phaseArrows) do
-            -- Color arrow based on completion (arrowIdx corresponds to phase before it)
-            if arrowIdx < phaseIndex then
-                arrow.TextColor3 = Color3.fromRGB(130, 90, 255)
-            else
-                arrow.TextColor3 = Color3.fromRGB(60, 60, 75)
-            end
-        end
-    end
-end
-
 local function closeLoadingScreen()
     if not StarFallLoading or not StarFallLoading.Parent then
         return
     end
-
-    -- Stop rotating tips and phase animations
-    tipsRunning = false
 
     local tweens = {}
 
@@ -635,8 +443,7 @@ local function progress(amount, status)
     setProgress(math.min(percent, 100), status)
 end
 
---// PHASE 1: GUI LIBRARY (Downloading)
-setPhase(1)
+--// PHASE 1: GUI LIBRARY
 for localPath, remoteUrl in pairs(FilesToDownload) do
     progress(1, "Downloading GUI library...")
 
@@ -650,14 +457,12 @@ for localPath, remoteUrl in pairs(FilesToDownload) do
     end
 end
 
---// PHASE 2: ASSETS (Verifying)
-setPhase(2)
+--// PHASE 2: ASSETS
 progress(1, "Installing assets...")
 
 local assetInstalled, assetSkipped, assetFailed = installAssets(false)
 
---// PHASE 3: GAMES (Installing)
-setPhase(3)
+--// PHASE 3: GAMES
 progress(1, "Installing games...")
 
 local gamesOk, gamesInstalled, gamesSkipped, gamesFailed =
@@ -667,8 +472,7 @@ if not gamesOk then
     warn("[StarFall] " .. tostring(gamesInstalled))
 end
 
---// PHASE 4: GAME DETECTION (Ready)
-setPhase(4)
+--// PHASE 4: GAME DETECTION
 progress(1, "Detecting game...")
 
 task.wait(0.1)
@@ -960,37 +764,6 @@ SettingsSection:CreateButton({
 
 --// INIT
 buildGameList()
-
---// AUTO UPDATE CHECK
-local function checkForUpdates()
-    local requestOk, response = pcall(function()
-        return game:HttpGet(REPO_BASE .. "guis/library.lua")
-    end)
-
-    if not requestOk or type(response) ~= "string" then
-        return false, "Failed to check for updates"
-    end
-
-    local localOk, localContent = pcall(readfile, GUI_DIR .. "/library.lua")
-    if not localOk or type(localContent) ~= "string" then
-        return false, "Failed to read local library"
-    end
-
-    -- Compare content (simple size check, could use hash for better accuracy)
-    if #localContent ~= #response then
-        return true, "Update available"
-    end
-
-    return false, "Up to date"
-end
-
--- Run update check in background
-task.spawn(function()
-    local hasUpdate, msg = checkForUpdates()
-    if hasUpdate and Library and Library.Notify then
-        Library:Notify("Update Available", msg .. " — Click 'Re-download Assets' to update", 6)
-    end
-end)
 
 --// AUTO LOAD KNOWN GAME
 if GameMap[PlaceId] then
