@@ -227,9 +227,9 @@ function SmoothUI:CreateWindow(config)
 		ZIndex = 0
 	}, Topbar)
 
-	-- Logo in Topbar (created once per window)
-	Create("ImageLabel", {
-		Name = "LogoImage",
+	-- Logo in Topbar (created once per window) - acts as toggle button
+	local LogoButton = Create("ImageButton", {
+		Name = "LogoButton",
 		Size = UDim2.fromOffset(45, 45),
 		Position = UDim2.fromScale(0.924595296, 0),
 		BackgroundTransparency = 1,
@@ -237,8 +237,114 @@ function SmoothUI:CreateWindow(config)
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Image = logoAsset,
-		ZIndex = 1
+		ZIndex = 1,
+		AutoButtonColor = false
 	}, Topbar)
+
+	-- Hover/tap feedback for logo button
+	LogoButton.MouseEnter:Connect(function()
+		Tween(LogoButton, {ImageTransparency = 0.2}, 0.1)
+	end)
+	LogoButton.MouseLeave:Connect(function()
+		Tween(LogoButton, {ImageTransparency = 0}, 0.1)
+	end)
+
+	-- Standalone floating logo (for when GUI is minimized)
+	local StandaloneLogo = Create("ImageButton", {
+		Name = "StandaloneLogo",
+		Size = UDim2.fromOffset(50, 50),
+		Position = UDim2.fromScale(0.95, 0.05),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundTransparency = 1,
+		Image = logoAsset,
+		Visible = false,
+		ZIndex = 999,
+		AutoButtonColor = false
+	}, self.ScreenGui)
+
+	Corner(StandaloneLogo, 25)
+	Stroke(StandaloneLogo, ThemeColor.Accent, 0.3)
+
+	-- Add subtle shadow/glow effect
+	Create("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(130, 90, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255)),
+		}),
+		Rotation = 45,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.8),
+			NumberSequenceKeypoint.new(1, 0.95),
+		})
+	}, StandaloneLogo)
+
+	-- Standalone logo dragging
+	local standaloneDragging = false
+	local standaloneDragStart, standaloneStartPos
+
+	StandaloneLogo.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			standaloneDragging = true
+			standaloneDragStart = input.Position
+			standaloneStartPos = StandaloneLogo.Position
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if standaloneDragging and (
+			input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			) then
+			local delta = input.Position - standaloneDragStart
+			StandaloneLogo.Position = UDim2.new(
+				standaloneStartPos.X.Scale,
+				standaloneStartPos.X.Offset + delta.X,
+				standaloneStartPos.Y.Scale,
+				standaloneStartPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			standaloneDragging = false
+		end
+	end)
+
+	-- Standalone logo hover/tap feedback
+	StandaloneLogo.MouseEnter:Connect(function()
+		Tween(StandaloneLogo, {Size = UDim2.fromOffset(55, 55)}, 0.1)
+	end)
+	StandaloneLogo.MouseLeave:Connect(function()
+		Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50)}, 0.1)
+	end)
+
+	-- Toggle function that handles both logo and standalone mode
+	local function ToggleUI()
+		local isVisible = Main.Visible
+		Window:SetVisible(not isVisible)
+
+		-- Toggle standalone logo visibility (opposite of main window)
+		StandaloneLogo.Visible = not Main.Visible
+
+		-- Animate standalone logo appearance
+		if StandaloneLogo.Visible then
+			StandaloneLogo.Size = UDim2.fromOffset(0, 0)
+			StandaloneLogo.ImageTransparency = 1
+			Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50), ImageTransparency = 0}, 0.3)
+		end
+	end
+
+	-- Click handlers
+	LogoButton.MouseButton1Click:Connect(ToggleUI)
+	StandaloneLogo.MouseButton1Click:Connect(ToggleUI)
+
+	-- Store references for external access
+	Window.LogoButton = LogoButton
+	Window.StandaloneLogo = StandaloneLogo
+	Window.ToggleUI = ToggleUI
 
 	-- Dragging
 	local dragging = false
@@ -1742,7 +1848,11 @@ function SmoothUI:CreateWindow(config)
 	end
 
 	function Window:Toggle()
-		Main.Visible = not Main.Visible
+		if Window.ToggleUI then
+			Window.ToggleUI()
+		else
+			Main.Visible = not Main.Visible
+		end
 	end
 
 	Window.CreateTab = CreateTab
@@ -1750,7 +1860,11 @@ function SmoothUI:CreateWindow(config)
 
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if not processed and input.KeyCode == Enum.KeyCode.RightShift then
-			Main.Visible = not Main.Visible
+			if Window.ToggleUI then
+				Window.ToggleUI()
+			else
+				Main.Visible = not Main.Visible
+			end
 		end
 	end)
 
