@@ -256,19 +256,6 @@ function SmoothUI:CreateWindow(config)
 		AutoButtonColor = false
 	}, self.ScreenGui)
 
-	-- Add subtle shadow/glow effect
-	Create("UIGradient", {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(130, 90, 255)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 110, 255)),
-		}),
-		Rotation = 45,
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.8),
-			NumberSequenceKeypoint.new(1, 0.95),
-		})
-	}, StandaloneLogo)
-
 	-- Standalone logo dragging
 	local standaloneDragging = false
 	local standaloneDragStart, standaloneStartPos
