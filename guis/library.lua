@@ -247,11 +247,13 @@ function SmoothUI:CreateWindow(config)
 		Name = "StandaloneLogo",
 		Size = UDim2.fromOffset(45, 45),
 		Position = UDim2.new(0, 25, 0, 65),
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 1,
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BorderColor3 = Color3.fromRGB(0, 0, 0),
+		BorderSizePixel = 0,
 		Image = logoAsset,
-		Visible = true,
-		ZIndex = 999,
+		ZIndex = 1,
+		AutoButtonColor = false
 	}, self.ScreenGui)
 
 	-- Add subtle shadow/glow effect
