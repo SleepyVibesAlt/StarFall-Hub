@@ -269,40 +269,8 @@ local function downloadFile(remoteUrl, localPath)
     return true
 end
 
--- Verify if local file matches remote (by content comparison)
-local function verifyFile(localPath, remoteUrl)
-    if not isfile then return false end
-
-    local success, exists = pcall(isfile, localPath)
-    if not success or not exists then return false end
-
-    -- Get local file content
-    local readOk, localContent = pcall(readfile, localPath)
-    if not readOk or type(localContent) ~= "string" then return false end
-
-    -- Get remote file content
-    local getOk, remoteContent = pcall(function()
-        return game:HttpGet(remoteUrl)
-    end)
-    if not getOk or type(remoteContent) ~= "string" then return false end
-
-    -- Compare content
-    return #localContent == #remoteContent
-end
-
 local function ensureFile(localPath, remoteUrl)
-    -- Always check for updates - only skip if content is identical
-    if isfile then
-        local success, exists = pcall(isfile, localPath)
-        if success and exists then
-            local isCurrent = verifyFile(localPath, remoteUrl)
-            if isCurrent then
-                return true -- File is up to date
-            end
-            -- File exists but differs - will download update
-        end
-    end
-
+    -- Always redownload, skip verification
     return downloadFile(remoteUrl, localPath)
 end
 
@@ -313,30 +281,23 @@ local AssetsToDownload = {
 
 local function installAssets()
     local installed = 0
-    local skipped = 0
     local failed = 0
 
     for fileName, remoteUrl in pairs(AssetsToDownload) do
         local localPath = ASSET_DIR .. "/" .. fileName
 
-        -- Always check for updates using content verification
-        local isCurrent = verifyFile(localPath, remoteUrl)
+        -- Always redownload
+        local success, err = downloadFile(remoteUrl, localPath)
 
-        if isCurrent then
-            skipped += 1
+        if success then
+            installed += 1
         else
-            local success, err = downloadFile(remoteUrl, localPath)
-
-            if success then
-                installed += 1
-            else
-                failed += 1
-                warn("[StarFall] Asset error: " .. tostring(err))
-            end
+            failed += 1
+            warn("[StarFall] Asset error: " .. tostring(err))
         end
     end
 
-    return installed, skipped, failed
+    return installed, 0, failed
 end
 
 --// ASSET LOADER
@@ -391,7 +352,6 @@ local function installRepositoryGames()
     end
 
     local installed = 0
-    local skipped = 0
     local failed = 0
 
     for _, entry in ipairs(entries) do
@@ -402,25 +362,19 @@ local function installRepositoryGames()
 
             local localPath = GAME_DIR .. "/" .. entry.name
 
-            -- Always check for updates using content verification
-            local isCurrent = verifyFile(localPath, entry.download_url)
+            -- Always redownload
+            local success, err = downloadFile(entry.download_url, localPath)
 
-            if isCurrent then
-                skipped += 1
+            if success then
+                installed += 1
             else
-                local success, err = downloadFile(entry.download_url, localPath)
-
-                if success then
-                    installed += 1
-                else
-                    failed += 1
-                    warn("[StarFall] Could not install " .. entry.name .. ": " .. tostring(err))
-                end
+                failed += 1
+                warn("[StarFall] Could not install " .. entry.name .. ": " .. tostring(err))
             end
         end
     end
 
-    return true, installed, skipped, failed
+    return true, installed, 0, failed
 end
 
 --// SETUP

@@ -256,7 +256,6 @@ function SmoothUI:CreateWindow(config)
 		Size = UDim2.fromOffset(45, 45),  -- Match LogoButton size
 		Position = UDim2.fromScale(0.924595296, 0),  -- Match LogoButton position
 		BackgroundTransparency = 0,
-		BackgroundColor3 = Color3.new(0, 0, 0),
 		Image = logoAsset,
 		Visible = true,
 		ZIndex = 999,
