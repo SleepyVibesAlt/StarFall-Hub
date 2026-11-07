@@ -242,19 +242,21 @@ function SmoothUI:CreateWindow(config)
 		AutoButtonColor = false
 	}, Topbar)
 
-	-- Standalone floating logo (for when GUI is minimized)
+	-- Standalone floating logo (always visible, acts as toggle button)
 	local StandaloneLogo = Create("ImageButton", {
 		Name = "StandaloneLogo",
 		Size = UDim2.fromOffset(45, 45),
 		Position = UDim2.new(0, 25, 0, 65),
-		BackgroundTransparency = 1,
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Image = logoAsset,
 		ZIndex = 1,
 		AutoButtonColor = false
 	}, self.ScreenGui)
+
+	Corner(StandaloneLogo, 8)
 
 	-- Standalone logo dragging
 	local standaloneDragging = false
@@ -322,8 +324,8 @@ function SmoothUI:CreateWindow(config)
 		local newVisible = not isVisible
 		SetVisible(newVisible)
 
-		-- Toggle standalone logo visibility (opposite of main window's NEW state)
-		StandaloneLogo.Visible = not newVisible
+		-- Standalone logo stays visible at all times (user drags it to reposition)
+		StandaloneLogo.Visible = true
 	end
 
 	-- Click handlers
