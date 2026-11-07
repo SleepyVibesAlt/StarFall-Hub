@@ -705,8 +705,6 @@ buildGameList()
 
 --// AUTO LOAD KNOWN GAME
 if GameMap[PlaceId] then
-    task.wait(1)
-
     local success, err = ensureFile(
         GameScript,
         REPO_BASE .. "games/" .. GameScript:match("([^/]+)$")
