@@ -255,15 +255,13 @@ function SmoothUI:CreateWindow(config)
 		Name = "StandaloneLogo",
 		Size = UDim2.fromOffset(45, 45),  -- Match LogoButton size
 		Position = UDim2.fromScale(0.924595296, 0),  -- Match LogoButton position
-		BackgroundTransparency = 1,
+		BackgroundTransparency = 0,
+		Color3 = Color3.new(0, 0, 0),
 		Image = logoAsset,
-		Visible = false,
+		Visible = true,
 		ZIndex = 999,
 		AutoButtonColor = false
 	}, self.ScreenGui)
-
-	Corner(StandaloneLogo, 22)  -- Slightly rounded for standalone
-	Stroke(StandaloneLogo, ThemeColor.Accent, 0.3)
 
 	-- Add subtle shadow/glow effect
 	Create("UIGradient", {
