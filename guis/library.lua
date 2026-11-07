@@ -349,13 +349,14 @@ function SmoothUI:CreateWindow(config)
 	-- Toggle function that handles both logo and standalone mode
 	local function ToggleUI()
 		local isVisible = Main.Visible
-		SetVisible(not isVisible)
+		local newVisible = not isVisible
+		SetVisible(newVisible)
 
 		-- Get the absolute position of the logo button for seamless transition
 		local logoAbsPos = LogoButton.AbsolutePosition
 
-		-- Toggle standalone logo visibility (opposite of main window)
-		StandaloneLogo.Visible = not Main.Visible
+		-- Toggle standalone logo visibility (opposite of main window's NEW state)
+		StandaloneLogo.Visible = not newVisible
 
 		if StandaloneLogo.Visible then
 			-- Position standalone logo exactly where the logo button is on screen
