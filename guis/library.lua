@@ -242,20 +242,13 @@ function SmoothUI:CreateWindow(config)
 		AutoButtonColor = false
 	}, Topbar)
 
-	-- Hover/tap feedback for logo button
-	LogoButton.MouseEnter:Connect(function()
-		Tween(LogoButton, {ImageTransparency = 0.2}, 0.1)
-	end)
-	LogoButton.MouseLeave:Connect(function()
-		Tween(LogoButton, {ImageTransparency = 0}, 0.1)
-	end)
-
-	-- Standalone floating logo (for when GUI is minimized) - matches logo button size/position
+	-- Standalone floating logo (for when GUI is minimized)
 	local StandaloneLogo = Create("ImageButton", {
 		Name = "StandaloneLogo",
-		Size = UDim2.fromOffset(45, 45),  -- Match LogoButton size
-		Position = UDim2.fromScale(0.924595296, 0),  -- Match LogoButton position
+		Size = UDim2.fromOffset(45, 45),
+		Position = UDim2.new(0, 25, 0, 65),
 		BackgroundTransparency = 0,
+		BackgroundColor3 = Color3.new(0, 0, 0),
 		Image = logoAsset,
 		Visible = true,
 		ZIndex = 999,
@@ -334,33 +327,14 @@ function SmoothUI:CreateWindow(config)
 		end
 	end
 
-	-- Standalone logo hover/tap feedback
-	StandaloneLogo.MouseEnter:Connect(function()
-		Tween(StandaloneLogo, {Size = UDim2.fromOffset(50, 50)}, 0.1)
-	end)
-	StandaloneLogo.MouseLeave:Connect(function()
-		Tween(StandaloneLogo, {Size = UDim2.fromOffset(45, 45)}, 0.1)
-	end)
-
 	-- Toggle function that handles both logo and standalone mode
 	local function ToggleUI()
 		local isVisible = Main.Visible
 		local newVisible = not isVisible
 		SetVisible(newVisible)
 
-		-- Get the absolute position of the logo button for seamless transition
-		local logoAbsPos = LogoButton.AbsolutePosition
-
 		-- Toggle standalone logo visibility (opposite of main window's NEW state)
 		StandaloneLogo.Visible = not newVisible
-
-		if StandaloneLogo.Visible then
-			-- Position standalone logo exactly where the logo button is on screen
-			StandaloneLogo.Position = UDim2.fromOffset(logoAbsPos.X, logoAbsPos.Y)
-			StandaloneLogo.Size = UDim2.fromOffset(0, 0)
-			StandaloneLogo.ImageTransparency = 1
-			Tween(StandaloneLogo, {Size = UDim2.fromOffset(45, 45), ImageTransparency = 0}, 0.3)
-		end
 	end
 
 	-- Click handlers
