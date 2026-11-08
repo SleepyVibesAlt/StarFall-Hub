@@ -535,10 +535,6 @@ function SmoothUI:CreateWindow(config)
 				else
 					ElementsContainer.Size = UDim2.new(1, -5, 0, 0)
 				end
-				-- Force layout update on the parent (Page) UIListLayout
-				if ElementsContainer.Parent then
-					ElementsContainer.Parent.UIListLayout:ApplyLayout()
-				end
 				Tween(Arrow, {Rotation = state and 0 or -90}, 0.2)
 			end
 
