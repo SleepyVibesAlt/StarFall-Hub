@@ -1,8 +1,3 @@
-
---// STARFALL HUB — LOADER
---// Downloads assets, installs game scripts, detects PlaceID,
---// and loads the matching script.
-
 --// SERVICES
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer

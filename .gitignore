@@ -1,4 +1,5 @@
 games/*.lua
 Raw/*.lua
+loader.lua
 # Backup folder
 backup/
